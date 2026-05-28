@@ -129,7 +129,7 @@ const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
 
     const indices = type === 'faqs' ? INDEX_FAQS
       : type === 'users' ? INDEX_USERS
-      : INDEX_QUESTIONS;
+      : [INDEX_QUESTIONS, INDEX_FAQS, INDEX_USERS];
 
     const body = {
       from: (page - 1) * limit,
