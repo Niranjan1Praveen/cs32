@@ -527,3 +527,99 @@ exports.getEscalatedQuestions = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.mergeIntoMasterFAQ = async (req, res, next) => {
+  try {
+    const { masterFAQId } = req.body;
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      throw new AppError('Only moderators can merge questions into master FAQs', 403);
+    }
+
+    const question = await Question.findById(req.params.id);
+    if (!question) throw new AppError('Question not found', 404);
+
+    const masterFAQ = await Question.findById(masterFAQId);
+    if (!masterFAQ) throw new AppError('Master FAQ not found', 404);
+    if (!masterFAQ.isFAQ) throw new AppError('Target must be a resolved FAQ', 400);
+
+    // Mark question as merged
+    question.mergedInto = masterFAQId;
+    question.status = 'closed';
+    question.closedReason = 'merged';
+    question.closedBy = req.user._id;
+    question.closedAt = new Date();
+    await question.save();
+
+    // Add to master's merged questions and increment count
+    await Question.findByIdAndUpdate(masterFAQId, {
+      $addToSet: { mergedQuestions: question._id },
+      $inc: { mergeCount: 1 },
+    });
+
+    res.json({ message: 'Question merged into master FAQ', question });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getMasterFAQs = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const [questions, total] = await Promise.all([
+      Question.find({ isFAQ: true, isMasterFAQ: true, isDeleted: false })
+        .sort({ mergeCount: -1, resolvedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('title answerCount viewCount mergeCount resolvedAt tagNames isOutdated')
+        .populate('author', 'username displayName'),
+      Question.countDocuments({ isFAQ: true, isMasterFAQ: true, isDeleted: false }),
+    ]);
+
+    res.json({
+      questions,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.promoteToMasterFAQ = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      throw new AppError('Only moderators can promote questions to master FAQ', 403);
+    }
+
+    const question = await Question.findById(req.params.id);
+    if (!question) throw new AppError('Question not found', 404);
+    if (!question.isFAQ) throw new AppError('Question must be a resolved FAQ to promote', 400);
+
+    question.isMasterFAQ = true;
+    await question.save();
+
+    res.json({ message: 'Promoted to master FAQ', question });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getMergedQuestions = async (req, res, next) => {
+  try {
+    const question = await Question.findById(req.params.id);
+    if (!question) throw new AppError('Question not found', 404);
+
+    const mergedQuestions = await Question.find({
+      _id: { $in: question.mergedQuestions },
+      isDeleted: false,
+    })
+      .sort({ createdAt: -1 })
+      .select('title author answerCount viewCount createdAt tagNames status')
+      .populate('author', 'username displayName');
+
+    res.json({ mergedQuestions });
+  } catch (err) {
+    next(err);
+  }
+};

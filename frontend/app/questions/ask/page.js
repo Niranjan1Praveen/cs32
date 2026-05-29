@@ -16,6 +16,8 @@ export default function AskQuestionPage() {
   const [error, setError] = useState('');
   const [similarQuestions, setSimilarQuestions] = useState([]);
   const [alreadyAskedInfo, setAlreadyAskedInfo] = useState(null);
+  const [titleSuggestions, setTitleSuggestions] = useState([]);
+  const [showTitleSuggestions, setShowTitleSuggestions] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -36,12 +38,33 @@ export default function AskQuestionPage() {
     } catch (_) {}
   }, []);
 
+  const searchTitleSuggestions = useCallback(async (query) => {
+    if (!query || query.length < 3) {
+      setTitleSuggestions([]);
+      setShowTitleSuggestions(false);
+      return;
+    }
+    try {
+      const data = await api.get('/questions/similar', { title: query });
+      const suggestions = (data.similar || []).concat(data.duplicates || []).slice(0, 5);
+      setTitleSuggestions(suggestions);
+      setShowTitleSuggestions(suggestions.length > 0);
+    } catch (_) {}
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       findSimilar(form.title, tags);
-    }, 500);
+      searchTitleSuggestions(form.title);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [form.title, tags, findSimilar]);
+  }, [form.title, tags, findSimilar, searchTitleSuggestions]);
+
+  useEffect(() => {
+    const handleClickOutside = () => setShowTitleSuggestions(false);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const addTag = (name) => {
     const t = name.toLowerCase().trim();
@@ -89,18 +112,35 @@ export default function AskQuestionPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card p-6 space-y-4">
-          <div>
+          <div className="relative">
             <label className="label">Title</label>
             <p className="text-xs text-gray-500 mb-1">Be specific and imagine you&apos;re asking a question to another person.</p>
             <input
               type="text"
               required
               value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onChange={(e) => { setForm({ ...form, title: e.target.value }); setShowTitleSuggestions(true); }}
+              onFocus={() => form.title.length >= 3 && titleSuggestions.length > 0 && setShowTitleSuggestions(true)}
               className="input"
               placeholder="e.g. How do I use useEffect in React for data fetching?"
               maxLength={300}
             />
+            {showTitleSuggestions && titleSuggestions.length > 0 && (
+              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100">Suggestions</div>
+                {titleSuggestions.map(q => (
+                  <button
+                    key={q._id}
+                    type="button"
+                    onClick={() => { setForm({ ...form, title: q.title }); setShowTitleSuggestions(false); }}
+                    className="w-full px-3 py-2.5 text-sm text-left hover:bg-gray-50 flex flex-col gap-0.5"
+                  >
+                    <span className="text-gray-900 font-medium line-clamp-1">{q.title}</span>
+                    <span className="text-xs text-gray-500">{q.answerCount || 0} answers</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Similar Questions Warning */}

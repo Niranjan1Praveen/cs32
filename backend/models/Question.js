@@ -59,6 +59,18 @@ const questionSchema = new mongoose.Schema({
   outdatedReason: { type: String },
   verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
+  // Master FAQ / Merging
+  isMasterFAQ: { type: Boolean, default: false },
+  mergedQuestions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Question',
+  }],
+  mergeCount: { type: Number, default: 0 },
+  mergedInto: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Question',
+  },
+
   // Duplicate detection
   isDuplicate: { type: Boolean, default: false },
   duplicateOf: {
@@ -110,5 +122,7 @@ questionSchema.index({ title: 1 }, { collation: { locale: 'en', strength: 2 } })
 questionSchema.index({ isFAQ: 1, isOutdated: 1, lastVerifiedAt: -1 });
 questionSchema.index({ resolutionStatus: 1, createdAt: -1 });
 questionSchema.index({ escalatedTo: 1, escalatedAt: -1 });
+questionSchema.index({ isMasterFAQ: 1, mergeCount: -1 });
+questionSchema.index({ mergedInto: 1 });
 
 module.exports = mongoose.model('Question', questionSchema);
