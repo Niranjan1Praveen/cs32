@@ -33,6 +33,7 @@ export default function QuestionDetailPage() {
     try {
       const data = await api.get(`/questions/${id}`);
       setQuestion(data.question);
+      setLoading(false);
     } catch (err) {
       toast.error('Question not found');
       router.push('/questions');
@@ -90,7 +91,6 @@ export default function QuestionDetailPage() {
       setSelectedReason('');
       setReasonText('');
 
-      // Optimistic update for answers - update locally then verify with fetch
       if (targetType === 'Answer') {
         setAnswers(prev => prev.map(a => {
           if (a._id === targetId) {
@@ -306,16 +306,280 @@ export default function QuestionDetailPage() {
           <div className="h-4 bg-gray-200 rounded w-2/3" />
         </div>
       </div>
-);
+    );
+  }
+
+  if (!question) {
+    return null;
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Question Header */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-start justify-between mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 flex-1">{question.title}</h1>
+          <div className="flex gap-2 ml-4">
+            {user && (user.role === 'admin' || user.role === 'moderator') && (
+              <>
+                <button onClick={handleDelete} className="text-red-600 hover:text-red-800 text-sm px-2 py-1">
+                  Delete
+                </button>
+                {!question.isVerified && (
+                  <button onClick={handleVerify} className="text-green-600 hover:text-green-800 text-sm px-2 py-1">
+                    Verify
+                  </button>
+                )}
+                <button onClick={handleMarkOutdated} className="text-yellow-600 hover:text-yellow-800 text-sm px-2 py-1">
+                  Mark Outdated
+                </button>
+                {!question.isMasterFAQ && (
+                  <button onClick={handlePromoteMaster} className="text-purple-600 hover:text-purple-800 text-sm px-2 py-1">
+                    Promote to Master
+                  </button>
+                )}
+                {!question.isMasterFAQ && (
+                  <button onClick={handleMergeFAQ} className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1">
+                    Merge into Master
+                  </button>
+                )}
+                {question.isMasterFAQ && (
+                  <button onClick={handleOpenMergeModal} className="text-indigo-600 hover:text-indigo-800 text-sm px-2 py-1">
+                    Merge Similar
+                  </button>
+                )}
+                {question.escalated && !question.escalationResolved && (
+                  <button onClick={handleResolveEscalation} className="text-orange-600 hover:text-orange-800 text-sm px-2 py-1">
+                    Resolve Escalation
+                  </button>
+                )}
+              </>
             )}
+            <button onClick={handleSave} className="text-gray-600 hover:text-gray-800">
+              {saved ? 'Saved ✓' : 'Save'}
+            </button>
+          </div>
+        </div>
+
+        {/* Question metadata */}
+        <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+          <span>Asked by {question.author?.displayName || question.author?.username || 'Unknown'}</span>
+          <span>{formatDate(question.createdAt)}</span>
+          <span>{question.views || 0} views</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => handleVote('Question', question._id, 'upvote')} className="text-green-600 hover:text-green-800">
+              ▲ {question.upvotes || 0}
+            </button>
+            <button onClick={() => handleVote('Question', question._id, 'downvote')} className="text-red-600 hover:text-red-800">
+              ▼
+            </button>
+          </div>
+        </div>
+
+        {/* Question body */}
+        <div className="prose max-w-none mb-4">
+          <MarkdownRenderer content={question.body} />
+        </div>
+
+        {/* Tags */}
+        {question.tags && question.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {question.tags.map(tag => (
+              <Link key={tag} href={`/questions?tag=${tag}`} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm hover:bg-gray-200">
+                {tag}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Status badges */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {question.isVerified && (
+            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Verified FAQ</span>
+          )}
+          {question.isMasterFAQ && (
+            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">Master FAQ</span>
+          )}
+          {question.outdated && (
+            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Outdated</span>
+          )}
+          {question.escalated && (
+            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
+              Escalated {question.escalationResolved && '(Resolved)'}
+            </span>
+          )}
+          {question.acceptedAnswer && (
+            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Has Accepted Answer</span>
+          )}
+        </div>
+
+        {/* Merged questions section */}
+        {question.isMasterFAQ && mergedQuestions.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <button onClick={() => setShowMerged(!showMerged)} className="text-sm text-gray-600 hover:text-gray-800">
+              {showMerged ? 'Hide' : 'Show'} merged questions ({mergedQuestions.length})
+            </button>
+            {showMerged && (
+              <div className="mt-2 space-y-2">
+                {mergedQuestions.map(mq => (
+                  <Link key={mq._id} href={`/questions/${mq._id}`} className="block p-2 bg-gray-50 rounded hover:bg-gray-100">
+                    <h4 className="text-sm font-medium text-gray-900">{mq.title}</h4>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Answers section */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          {answers.length} {answers.length === 1 ? 'Answer' : 'Answers'}
+        </h2>
+
+        {answers.map(answer => (
+          <div key={answer._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="font-medium text-gray-900">
+                  {answer.author?.displayName || answer.author?.username || 'Unknown'}
+                </div>
+                <div className="text-sm text-gray-500">{formatDate(answer.createdAt)}</div>
+                {answer.isAccepted && (
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Accepted Answer</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => handleVote('Answer', answer._id, 'upvote')} className="text-green-600 hover:text-green-800">
+                  ▲ {answer.upvotes || 0}
+                </button>
+                <button onClick={() => handleVote('Answer', answer._id, 'downvote')} className="text-red-600 hover:text-red-800">
+                  ▼
+                </button>
+                {user && user._id === question.author?._id && !question.acceptedAnswer && (
+                  <button onClick={() => handleAcceptAnswer(answer._id)} className="text-blue-600 hover:text-blue-800 text-sm">
+                    Accept
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="prose max-w-none">
+              <MarkdownRenderer content={answer.body} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Post answer form */}
+      {user ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Answer</h3>
+          <form onSubmit={handleSubmitAnswer}>
+            <textarea
+              value={newAnswer}
+              onChange={(e) => setNewAnswer(e.target.value)}
+              rows={6}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="Write your answer here... (Markdown supported)"
+            />
+            <div className="flex justify-end mt-4">
+              <button type="submit" disabled={answering} className="btn-primary">
+                {answering ? 'Posting...' : 'Post Answer'}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div className="bg-gray-50 rounded-lg p-6 text-center">
+          <p className="text-gray-600">
+            Please <Link href="/login" className="text-primary-600 hover:text-primary-700">login</Link> to answer this question.
+          </p>
+        </div>
+      )}
+
+      {/* Escalate button for unresolved issues */}
+      {user && question.acceptedAnswer && (
+        <div className="mt-4 text-center">
+          <button onClick={handleEscalate} className="text-sm text-orange-600 hover:text-orange-800">
+            Still having issues? Click to escalate
+          </button>
+        </div>
+      )}
+
+      {/* Confirm resolution button */}
+      {user && user._id === question.author?._id && !question.resolutionConfirmed && question.acceptedAnswer && (
+        <div className="mt-4 text-center">
+          <button onClick={handleConfirmResolved} className="btn-primary">
+            Confirm this resolved my issue
+          </button>
+        </div>
+      )}
+
+      {/* Downvote Modal */}
+      {downvoteModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Why are you downvoting?</h3>
+            <div className="space-y-3 mb-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  value="Not helpful"
+                  checked={selectedReason === 'Not helpful'}
+                  onChange={(e) => setSelectedReason(e.target.value)}
+                  className="text-primary-600"
+                />
+                <span>Not helpful</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  value="Outdated"
+                  checked={selectedReason === 'Outdated'}
+                  onChange={(e) => setSelectedReason(e.target.value)}
+                  className="text-primary-600"
+                />
+                <span>Outdated information</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  value="Inaccurate"
+                  checked={selectedReason === 'Inaccurate'}
+                  onChange={(e) => setSelectedReason(e.target.value)}
+                  className="text-primary-600"
+                />
+                <span>Inaccurate</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  value="Other"
+                  checked={selectedReason === 'Other'}
+                  onChange={(e) => setSelectedReason(e.target.value)}
+                  className="text-primary-600"
+                />
+                <span>Other</span>
+              </label>
+              {selectedReason === 'Other' && (
+                <textarea
+                  value={reasonText}
+                  onChange={(e) => setReasonText(e.target.value)}
+                  placeholder="Please explain..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 mt-2"
+                  rows={3}
+                />
+              )}
+            </div>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => { setDownvoteModal({ open: false, targetType: null, targetId: null }); setSelectedReason(''); setReasonText(''); }}
-                className="btn-secondary"
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
               >
                 Cancel
               </button>
-              <button onClick={submitDownvote} className="btn-danger" disabled={!selectedReason}>
+              <button onClick={submitDownvote} className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700" disabled={!selectedReason}>
                 Submit
               </button>
             </div>
@@ -365,10 +629,10 @@ export default function QuestionDetailPage() {
               )}
             </div>
             <div className="flex gap-3 justify-end border-t pt-4">
-              <button onClick={() => setMergeModal({ open: false, selected: [] })} className="btn-secondary">
+              <button onClick={() => setMergeModal({ open: false, selected: [] })} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
                 Cancel
               </button>
-              <button onClick={handleMergeSelected} className="btn-primary" disabled={mergeModal.selected.length === 0}>
+              <button onClick={handleMergeSelected} className="px-4 py-2 text-white bg-primary-600 rounded-md hover:bg-primary-700" disabled={mergeModal.selected.length === 0}>
                 Merge {mergeModal.selected.length} Question{mergeModal.selected.length !== 1 ? 's' : ''}
               </button>
             </div>
