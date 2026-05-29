@@ -62,30 +62,12 @@ export default function QuestionDetailPage() {
         socket.off('answer:new');
       };
     }
-  }, [socket, id]);
+  }, [socket, id, recentlyPostedId]);
 
   const handleVote = async (targetType, targetId, voteType) => {
     if (!user) { toast.error('Please login to vote'); return; }
     try {
-<<<<<<< HEAD
-      await api.post('/votes', { targetType, targetId, voteType, reason, reasonText });
-      setDownvoteModal({ open: false, targetType: null, targetId: null });
-      setSelectedReason('');
-      setReasonText('');
-
-      if (targetType === 'Answer') {
-        setAnswers(prev => prev.map(a => {
-          if (a._id === targetId) {
-            const delta = voteType === 'upvote' ? 1 : -1;
-            return { ...a, upvotes: a.upvotes + delta };
-          }
-          return a;
-        }));
-      }
-
-=======
       await api.post('/votes', { targetType, targetId, voteType });
->>>>>>> 1403fd940c2bceb8e27dce5b500f89cd4c86abad
       if (targetType === 'Question') {
         fetchQuestion();
       } else {
@@ -157,10 +139,10 @@ export default function QuestionDetailPage() {
 
   const canEscalate = () => {
     if (!user) return false;
-    const isAuthor = user._id === question.author?._id;
+    const isAuthor = user._id === question?.author?._id;
     const isModOrAdmin = user.role === 'admin' || user.role === 'moderator';
     if (!isAuthor && !isModOrAdmin) return false;
-    if (question.isEscalated || question.resolutionStatus === 'escalated') return false;
+    if (question?.isEscalated || question?.resolutionStatus === 'escalated') return false;
     return true;
   };
 
@@ -233,7 +215,6 @@ export default function QuestionDetailPage() {
                 dateCreated: question.acceptedAnswer.createdAt,
                 author: { '@type': 'Person', name: question.acceptedAnswer.author?.displayName || question.acceptedAnswer.author?.username },
                 upvoteCount: question.acceptedAnswer.upvotes,
-                text: question.acceptedAnswer.body,
               } : undefined,
               suggestedAnswer: answers.filter(a => !a.isAccepted).slice(0, 5).map(a => ({
                 '@type': 'Answer',
@@ -246,240 +227,231 @@ export default function QuestionDetailPage() {
           })
         }}
       />
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Duplicate Notice */}
-      {question.isDuplicate && question.duplicateOf && (
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center gap-2 text-yellow-800">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span className="font-semibold">This question has been marked as a duplicate</span>
-          </div>
-          <Link href={`/questions/${question.duplicateOf._id || question.duplicateOf}`} className="text-primary-600 hover:text-primary-700 text-sm mt-1 inline-block">
-            View the original question →
-          </Link>
-        </div>
-      )}
-
-      {/* Closed Notice */}
-      {question.status === 'closed' && !question.isDuplicate && (
-        <div className="mb-4 p-4 bg-gray-100 border border-gray-300 rounded-lg">
-          <div className="flex items-center gap-2 text-gray-700">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <span className="font-semibold">This question is closed: {question.closedReason || 'No reason given'}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Outdated Notice */}
-      {question.isFAQ && question.isOutdated && (
-        <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-          <div className="flex items-center gap-2 text-orange-800">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span className="font-semibold">This FAQ may be outdated</span>
-          </div>
-          {question.outdatedReason && (
-            <p className="text-sm text-orange-700 mt-1">{question.outdatedReason}</p>
-          )}
-          <p className="text-xs text-orange-600 mt-1">Last verified: {question.lastVerifiedAt ? formatDate(question.lastVerifiedAt) : 'Never'}</p>
-        </div>
-      )}
-
-      {/* FAQ Verified Badge */}
-      {question.isFAQ && !question.isOutdated && question.lastVerifiedAt && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800 text-sm">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Verified on {formatDate(question.lastVerifiedAt)}</span>
-        </div>
-      )}
-
-      {/* Question Header */}
-      <div className="mb-6">
-        <div className="flex items-start justify-between gap-4">
-          <h1 className={`text-2xl sm:text-3xl font-bold text-gray-900 ${question.status === 'closed' ? 'opacity-60' : ''}`}>{question.title}</h1>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={handleSave} className="btn-secondary btn-sm">
-              {saved ? 'Saved' : 'Save'}
-            </button>
-            {(user?._id === question.author?._id || user?.role === 'admin') && (
-              <button onClick={handleDelete} className="btn-danger btn-sm">Delete</button>
-            )}
-            {question.isFAQ && (user?.role === 'admin' || user?.role === 'moderator') && (
-              <button onClick={handleVerify} className="btn-secondary btn-sm">Verify FAQ</button>
-            )}
-            {question.isFAQ && (user?.role === 'admin' || user?.role === 'moderator') && (
-              <button onClick={() => handleMarkOutdated()} className="btn-secondary btn-sm">Mark Outdated</button>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 mt-3">
-          {question.tagNames?.map(tag => (
-            <Link key={tag} href={`/tags/${tag}`} className="badge-primary">{tag}</Link>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
-          <Link href={`/users/${question.author?.username}`} className="flex items-center gap-1 hover:text-primary-600">
-            <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[10px] font-medium">
-              {(question.author?.displayName || question.author?.username || '?')[0]}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Duplicate Notice */}
+        {question.isDuplicate && question.duplicateOf && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2 text-yellow-800">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="font-semibold">This question has been marked as a duplicate</span>
             </div>
-            <span>{question.author?.displayName || question.author?.username}</span>
-          </Link>
-          <span>asked {formatDate(question.createdAt)}</span>
-          <span>{question.viewCount} views</span>
-          {canEscalate() && (
-            <button onClick={() => setEscalateModal({ open: true })} className="ml-2 text-orange-600 hover:text-orange-700 font-medium text-xs border border-orange-300 rounded px-2 py-0.5">
-              Escalate Query
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex gap-4">
-        {/* Vote sidebar */}
-        <div className="hidden sm:flex flex-col items-center gap-2">
-          <button onClick={() => handleVote('Question', id, 'upvote')} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-green-600 transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-          </button>
-          <span className="font-bold text-lg text-gray-900">{question.upvotes - question.downvotes}</span>
-          <button onClick={() => handleVote('Question', id, 'downvote')} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-red-600 transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-          </button>
-        </div>
-
-        {/* Question body */}
-        <div className="flex-1 min-w-0">
-          <div className="card p-6 mb-4">
-            <MarkdownRenderer content={question.body} />
+            <Link href={`/questions/${question.duplicateOf._id || question.duplicateOf}`} className="text-primary-600 hover:text-primary-700 text-sm mt-1 inline-block">
+              View the original question →
+            </Link>
           </div>
+        )}
 
-          {/* Answer count */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {question.answerCount || 0} {(question.answerCount || 0) === 1 ? 'Answer' : 'Answers'}
-            </h2>
-          </div>
-
-          {/* Answers */}
-          {answers.length === 0 ? (
-            <div className="card p-8 text-center mb-6">
-              <p className="text-gray-500">No answers yet. Be the first to answer!</p>
+        {/* Closed Notice */}
+        {question.status === 'closed' && !question.isDuplicate && (
+          <div className="mb-4 p-4 bg-gray-100 border border-gray-300 rounded-lg">
+            <div className="flex items-center gap-2 text-gray-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="font-semibold">This question is closed: {question.closedReason || 'No reason given'}</span>
             </div>
-          ) : (
-            <div className="space-y-4 mb-6">
-              {answers.map(answer => (
-                <div key={answer._id} className={`card p-6 ${answer.isAccepted ? 'border-green-300 ring-1 ring-green-200' : ''}`}>
-                  <div className="flex gap-4">
-                    <div className="hidden sm:flex flex-col items-center gap-1">
-                      <button onClick={() => handleVote('Answer', answer._id, 'upvote')} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-green-600">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-                      </button>
-                      <span className="font-semibold text-sm">{answer.upvotes - answer.downvotes}</span>
-                      <button onClick={() => handleVote('Answer', answer._id, 'downvote')} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-red-600">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                      </button>
-                    </div>
-                    <div className="flex-1">
-                      <MarkdownRenderer content={answer.body} />
-                      <div className="mt-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <Link href={`/users/${answer.author?.username}`} className="flex items-center gap-1 hover:text-primary-600">
-                            <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[10px] font-medium">
-                              {(answer.author?.displayName || answer.author?.username || '?')[0]}
-                            </div>
-                            <span>{answer.author?.displayName || answer.author?.username}</span>
-                          </Link>
-                          <span>answered {formatDate(answer.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {answer.isOfficial && <span className="badge-green">Official</span>}
-                          {answer.isAccepted && <span className="badge-green">Accepted</span>}
-                          {question.author?._id === user?._id && !answer.isAccepted && (
-                            <button onClick={() => handleAcceptAnswer(answer._id)} className="btn-secondary btn-sm">
-                              Accept
-                            </button>
-                          )}
+          </div>
+        )}
+
+        {/* Outdated Notice */}
+        {question.isFAQ && question.isOutdated && (
+          <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center gap-2 text-orange-800">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="font-semibold">This FAQ may be outdated</span>
+            </div>
+            {question.outdatedReason && (
+              <p className="text-sm text-orange-700 mt-1">{question.outdatedReason}</p>
+            )}
+            <p className="text-xs text-orange-600 mt-1">Last verified: {question.lastVerifiedAt ? formatDate(question.lastVerifiedAt) : 'Never'}</p>
+          </div>
+        )}
+
+        {/* FAQ Verified Badge */}
+        {question.isFAQ && !question.isOutdated && question.lastVerifiedAt && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800 text-sm">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Verified on {formatDate(question.lastVerifiedAt)}</span>
+          </div>
+        )}
+
+        {/* Question Header */}
+        <div className="mb-6">
+          <div className="flex items-start justify-between gap-4">
+            <h1 className={`text-2xl sm:text-3xl font-bold text-gray-900 ${question.status === 'closed' ? 'opacity-60' : ''}`}>{question.title}</h1>
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={handleSave} className="btn-secondary btn-sm">
+                {saved ? 'Saved' : 'Save'}
+              </button>
+              {(user?._id === question.author?._id || user?.role === 'admin') && (
+                <button onClick={handleDelete} className="btn-danger btn-sm">Delete</button>
+              )}
+              {question.isFAQ && (user?.role === 'admin' || user?.role === 'moderator') && (
+                <button onClick={handleVerify} className="btn-secondary btn-sm">Verify FAQ</button>
+              )}
+              {question.isFAQ && (user?.role === 'admin' || user?.role === 'moderator') && (
+                <button onClick={() => handleMarkOutdated()} className="btn-secondary btn-sm">Mark Outdated</button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 mt-3">
+            {question.tagNames?.map(tag => (
+              <Link key={tag} href={`/tags/${tag}`} className="badge-primary">{tag}</Link>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
+            <Link href={`/users/${question.author?.username}`} className="flex items-center gap-1 hover:text-primary-600">
+              <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[10px] font-medium">
+                {(question.author?.displayName || question.author?.username || '?')[0]}
+              </div>
+              <span>{question.author?.displayName || question.author?.username}</span>
+            </Link>
+            <span>asked {formatDate(question.createdAt)}</span>
+            <span>{question.viewCount} views</span>
+            {canEscalate() && (
+              <button onClick={() => setEscalateModal({ open: true })} className="ml-2 text-orange-600 hover:text-orange-700 font-medium text-xs border border-orange-300 rounded px-2 py-0.5">
+                Escalate Query
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          {/* Vote sidebar */}
+          <div className="hidden sm:flex flex-col items-center gap-2">
+            <button onClick={() => handleVote('Question', id, 'upvote')} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-green-600 transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+            </button>
+            <span className="font-bold text-lg text-gray-900">{question.upvotes - question.downvotes}</span>
+            <button onClick={() => handleVote('Question', id, 'downvote')} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-red-600 transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </button>
+          </div>
+
+          {/* Question body */}
+          <div className="flex-1 min-w-0">
+            <div className="card p-6 mb-4">
+              <MarkdownRenderer content={question.body} />
+            </div>
+
+            {/* Answer count */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {question.answerCount || 0} {(question.answerCount || 0) === 1 ? 'Answer' : 'Answers'}
+              </h2>
+            </div>
+
+            {/* Answers */}
+            {answers.length === 0 ? (
+              <div className="card p-8 text-center mb-6">
+                <p className="text-gray-500">No answers yet. Be the first to answer!</p>
+              </div>
+            ) : (
+              <div className="space-y-4 mb-6">
+                {answers.map(answer => (
+                  <div key={answer._id} className={`card p-6 ${answer.isAccepted ? 'border-green-300 ring-1 ring-green-200' : ''}`}>
+                    <div className="flex gap-4">
+                      <div className="hidden sm:flex flex-col items-center gap-1">
+                        <button onClick={() => handleVote('Answer', answer._id, 'upvote')} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-green-600">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                        </button>
+                        <span className="font-semibold text-sm">{answer.upvotes - answer.downvotes}</span>
+                        <button onClick={() => handleVote('Answer', answer._id, 'downvote')} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-red-600">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                      </div>
+                      <div className="flex-1">
+                        <MarkdownRenderer content={answer.body} />
+                        <div className="mt-4 flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Link href={`/users/${answer.author?.username}`} className="flex items-center gap-1 hover:text-primary-600">
+                              <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[10px] font-medium">
+                                {(answer.author?.displayName || answer.author?.username || '?')[0]}
+                              </div>
+                              <span>{answer.author?.displayName || answer.author?.username}</span>
+                            </Link>
+                            <span>answered {formatDate(answer.createdAt)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {answer.isOfficial && <span className="badge-green">Official</span>}
+                            {answer.isAccepted && <span className="badge-green">Accepted</span>}
+                            {question.author?._id === user?._id && !answer.isAccepted && (
+                              <button onClick={() => handleAcceptAnswer(answer._id)} className="btn-secondary btn-sm">
+                                Accept
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-<<<<<<< HEAD
-            <div className="flex gap-3 justify-end border-t pt-4">
-              <button onClick={() => setMergeModal({ open: false, selected: [] })} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                Cancel
-              </button>
-              <button onClick={handleMergeSelected} className="px-4 py-2 text-white bg-primary-600 rounded-md hover:bg-primary-700" disabled={mergeModal.selected.length === 0}>
-                Merge {mergeModal.selected.length} Question{mergeModal.selected.length !== 1 ? 's' : ''}
-=======
-          )}
+                ))}
+              </div>
+            )}
 
-          {/* Answer form */}
-          {user ? (
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Answer</h3>
-              <form onSubmit={handleSubmitAnswer}>
-                <textarea
-                  rows={6}
-                  value={newAnswer}
-                  onChange={(e) => setNewAnswer(e.target.value)}
-                  className="input mb-3 font-mono text-sm"
-                  placeholder="Write your answer in Markdown..."
-                  maxLength={50000}
-                />
-                <button type="submit" disabled={answering} className="btn-primary">
-                  {answering ? 'Posting...' : 'Post Answer'}
-                </button>
-              </form>
-            </div>
-          ) : (
-            <div className="card p-6 text-center">
-              <p className="text-gray-500">
-                <Link href={`/auth?mode=login&redirect=/questions/${id}`} className="text-primary-600 hover:text-primary-700 font-medium">
-                  Login
-                </Link> to answer this question
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Escalate Question Modal */}
-      {escalateModal.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Escalate Question</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Your question has had no responses for 24 hours. Escalating will notify moderators to review and potentially highlight your question.
-            </p>
-            <textarea
-              value={escalationReason}
-              onChange={(e) => setEscalationReason(e.target.value)}
-              className="input mb-4 w-full"
-              placeholder="Reason for escalation (optional)"
-              rows={3}
-            />
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => { setEscalateModal({ open: false }); setEscalationReason(''); }} className="btn-secondary">
-                Cancel
-              </button>
-              <button onClick={handleEscalate} className="btn-warning">
-                Escalate
->>>>>>> 1403fd940c2bceb8e27dce5b500f89cd4c86abad
-              </button>
-            </div>
+            {/* Answer form */}
+            {user ? (
+              <div className="card p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Answer</h3>
+                <form onSubmit={handleSubmitAnswer}>
+                  <textarea
+                    rows={6}
+                    value={newAnswer}
+                    onChange={(e) => setNewAnswer(e.target.value)}
+                    className="input mb-3 font-mono text-sm"
+                    placeholder="Write your answer in Markdown..."
+                    maxLength={50000}
+                  />
+                  <button type="submit" disabled={answering} className="btn-primary">
+                    {answering ? 'Posting...' : 'Post Answer'}
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="card p-6 text-center">
+                <p className="text-gray-500">
+                  <Link href={`/auth?mode=login&redirect=/questions/${id}`} className="text-primary-600 hover:text-primary-700 font-medium">
+                    Login
+                  </Link> to answer this question
+                </p>
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Escalate Question Modal */}
+        {escalateModal.open && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Escalate Question</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Your question has had no responses for 24 hours. Escalating will notify moderators to review and potentially highlight your question.
+              </p>
+              <textarea
+                value={escalationReason}
+                onChange={(e) => setEscalationReason(e.target.value)}
+                className="input mb-4 w-full"
+                placeholder="Reason for escalation (optional)"
+                rows={3}
+              />
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => { setEscalateModal({ open: false }); setEscalationReason(''); }} className="btn-secondary">
+                  Cancel
+                </button>
+                <button onClick={handleEscalate} className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700">
+                  Escalate
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }
