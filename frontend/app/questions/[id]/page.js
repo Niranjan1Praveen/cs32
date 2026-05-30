@@ -304,7 +304,7 @@ export default function QuestionDetailPage() {
             <button onClick={handleSave} className="btn-secondary btn-sm">
               {saved ? 'Saved' : 'Save'}
             </button>
-            {(user?._id === question.author?._id || user?.role === 'admin') && (
+            {(user?.role === 'admin' || user?.role === 'moderator') && (
               <button onClick={handleDelete} className="btn-danger btn-sm">Delete</button>
             )}
             {question.isFAQ && (user?.role === 'admin' || user?.role === 'moderator') && (
