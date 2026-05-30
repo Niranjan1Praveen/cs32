@@ -41,6 +41,13 @@ const answerSchema = new mongoose.Schema({
 
   // For official/verified answers
   isOfficial: { type: Boolean, default: false },
+
+  // Confidence level
+  confidenceLevel: {
+    type: String,
+    enum: ['low', 'medium', 'high', null],
+    default: null,
+  },
 }, { timestamps: true });
 
 answerSchema.index({ question: 1, createdAt: 1 });

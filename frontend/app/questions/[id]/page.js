@@ -26,6 +26,7 @@ export default function QuestionDetailPage() {
   const [escalationReason, setEscalationReason] = useState('');
   const [solvedDoubtAnswers, setSolvedDoubtAnswers] = useState({});
   const [showCelebration, setShowCelebration] = useState(false);
+  const [confidenceLevel, setConfidenceLevel] = useState(null);
 
   const fetchQuestion = useCallback(async () => {
     try {
@@ -140,10 +141,11 @@ export default function QuestionDetailPage() {
 
     setAnswering(true);
     try {
-      const data = await api.post(`/answers/question/${id}`, { body: newAnswer });
+      const data = await api.post(`/answers/question/${id}`, { body: newAnswer, confidenceLevel });
       setRecentlyPostedId(data.answer._id);
       setAnswers(prev => [data.answer, ...prev]);
       setNewAnswer('');
+      setConfidenceLevel(null);
       toast.success('Answer posted!');
     } catch (err) {
       toast.error(err.message || 'Failed to post answer');
@@ -443,6 +445,21 @@ export default function QuestionDetailPage() {
                           {answer.isOfficial && <span className="badge-green">Official</span>}
                           {answer.isAccepted && <span className="badge-green">Accepted</span>}
                           {answer.solvedMyDoubtCount >= 5 && <span className="badge-blue">Helpful ({answer.solvedMyDoubtCount})</span>}
+                          {answer.confidenceLevel === 'low' && (
+                            <span className="badge-gray flex items-center gap-1">
+                              <span>🤔</span><span>I think so</span>
+                            </span>
+                          )}
+                          {answer.confidenceLevel === 'medium' && (
+                            <span className="badge-yellow flex items-center gap-1">
+                              <span>👍</span><span>Pretty sure</span>
+                            </span>
+                          )}
+                          {answer.confidenceLevel === 'high' && (
+                            <span className="badge-green flex items-center gap-1">
+                              <span>💯</span><span>I know this</span>
+                            </span>
+                          )}
                           <button
                             onClick={() => handleSolvedMyDoubt(answer._id)}
                             className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
@@ -483,6 +500,35 @@ export default function QuestionDetailPage() {
                   placeholder="Write your answer in Markdown..."
                   maxLength={50000}
                 />
+
+                {/* Confidence Level Picker */}
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">How confident are you?</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'low', label: 'I think so', icon: '🤔', color: 'gray' },
+                      { value: 'medium', label: 'Pretty sure', icon: '👍', color: 'yellow' },
+                      { value: 'high', label: 'I know this', icon: '💯', color: 'green' },
+                    ].map(({ value, label, icon, color }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setConfidenceLevel(confidenceLevel === value ? null : value)}
+                        className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-1.5 transition-colors border ${
+                          confidenceLevel === value
+                            ? color === 'gray' ? 'bg-gray-200 border-gray-400 text-gray-800' :
+                              color === 'yellow' ? 'bg-yellow-100 border-yellow-400 text-yellow-800' :
+                              'bg-green-100 border-green-400 text-green-800'
+                            : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span>{icon}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button type="submit" disabled={answering} className="btn-primary">
                   {answering ? 'Posting...' : 'Post Answer'}
                 </button>

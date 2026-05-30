@@ -22,6 +22,7 @@ exports.createAnswer = async (req, res, next) => {
       body: req.body.body,
       question: question._id,
       author: req.user._id,
+      confidenceLevel: req.body.confidenceLevel || null,
     });
 
     question.answerCount += 1;
@@ -92,6 +93,7 @@ exports.getAnswers = async (req, res, next) => {
           isAccepted: 1,
           isOfficial: 1,
           solvedMyDoubtCount: 1,
+          confidenceLevel: 1,
           createdAt: 1,
           updatedAt: 1,
           'author.username': 1,

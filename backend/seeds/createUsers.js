@@ -34,6 +34,28 @@ const users = [
     reputation: 250,
     badges: ['Contributor'],
     isBanned: false
+  },
+  {
+    username: 'alice',
+    email: 'alice@quorafaq.com',
+    password: 'alice123',
+    displayName: 'Alice Johnson',
+    bio: 'Computer Science student',
+    role: 'user',
+    reputation: 100,
+    badges: ['Newcomer'],
+    isBanned: false
+  },
+  {
+    username: 'bob',
+    email: 'bob@quorafaq.com',
+    password: 'bob123',
+    displayName: 'Bob Smith',
+    bio: 'Engineering student',
+    role: 'user',
+    reputation: 150,
+    badges: ['Curious Learner'],
+    isBanned: false
   }
 ];
 
@@ -65,6 +87,8 @@ async function seed() {
     console.log('Admin:     admin@quorafaq.com / admin123');
     console.log('Moderator: moderator@quorafaq.com / mod12345');
     console.log('Student:   student@quorafaq.com / student123');
+    console.log('Alice:     alice@quorafaq.com / alice123');
+    console.log('Bob:       bob@quorafaq.com / bob123');
 
     await mongoose.disconnect();
     console.log('\nDone!');
