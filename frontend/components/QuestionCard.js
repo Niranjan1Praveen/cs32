@@ -12,6 +12,9 @@ export default function QuestionCard({ question }) {
   const [downvotes, setDownvotes] = useState(question.downvotes || 0);
   const [userVote, setUserVote] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [meTooCount, setMeTooCount] = useState(question.meTooCount || 0);
+  const [hasMeToo, setHasMeToo] = useState(question.hasMeToo || false);
+  const [meTooLoading, setMeTooLoading] = useState(false);
 
   useEffect(() => {
     if (user && question._id) {
@@ -39,6 +42,24 @@ export default function QuestionCard({ question }) {
       toast.error(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMeToo = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { toast.error('Please login to use this feature'); return; }
+    if (meTooLoading) return;
+
+    setMeTooLoading(true);
+    try {
+      const data = await api.patch(`/questions/${question._id}/me-too`);
+      setMeTooCount(data.meTooCount);
+      setHasMeToo(data.hasMeToo);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setMeTooLoading(false);
     }
   };
 
@@ -71,6 +92,19 @@ export default function QuestionCard({ question }) {
           </span>
           <span className="text-gray-500 text-xs">answers</span>
           <span className="text-gray-400 text-xs">{question.viewCount || 0} views</span>
+          <button
+            onClick={handleMeToo}
+            className={`p-1 rounded hover:bg-gray-100 mt-1 ${hasMeToo ? 'text-blue-600' : 'text-gray-400 hover:text-blue-600'} ${meTooLoading ? 'opacity-50' : ''}`}
+            disabled={meTooLoading}
+            title={`${meTooCount} students have the same doubt`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </button>
+          <span className={`text-xs font-medium ${meTooCount > 0 ? 'text-blue-600' : 'text-gray-500'}`}>
+            {meTooCount > 0 ? `${meTooCount}` : ''}
+          </span>
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-lg font-semibold text-gray-900 mb-1">
@@ -93,16 +127,23 @@ export default function QuestionCard({ question }) {
             ))}
           </div>
           <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-            <Link href={`/users/${question.author?.username}`} className="flex items-center gap-1 hover:text-primary-600">
-              {question.author?.avatar ? (
-                <img src={question.author?.avatar} alt="" className="w-4 h-4 rounded-full" />
-              ) : (
-                <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[10px] font-medium">
-                  {(question.author?.displayName || question.author?.username || '?')[0]}
-                </span>
-              )}
-              <span>{question.author?.displayName || question.author?.username}</span>
-            </Link>
+            {question.author?._id === 'anonymous' ? (
+              <span className="flex items-center gap-1">
+                <span className="w-4 h-4 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[10px] font-medium">?</span>
+                <span>Anonymous Student</span>
+              </span>
+            ) : (
+              <Link href={`/users/${question.author?.username}`} className="flex items-center gap-1 hover:text-primary-600">
+                {question.author?.avatar ? (
+                  <img src={question.author?.avatar} alt="" className="w-4 h-4 rounded-full" />
+                ) : (
+                  <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[10px] font-medium">
+                    {(question.author?.displayName || question.author?.username || '?')[0]}
+                  </span>
+                )}
+                <span>{question.author?.displayName || question.author?.username}</span>
+              </Link>
+            )}
             <span>asked {formatDate(question.createdAt)}</span>
           </div>
         </div>
