@@ -9,6 +9,7 @@ const { paginate, buildPaginationMeta } = require('../utils/helpers');
 const { emitToUser, emitToQuestion } = require('../socket');
 const { indexQuestion } = require('../services/searchService');
 const { flagContent, clearFlag } = require('../services/moderationService');
+const { broadcastLeaderboard } = require('../services/leaderboardService');
 
 exports.createAnswer = async (req, res, next) => {
   try {
@@ -139,7 +140,8 @@ exports.deleteAnswer = async (req, res, next) => {
   try {
     const answer = await Answer.findById(req.params.id);
     if (!answer || answer.isDeleted) throw new AppError('Answer not found', 404);
-    if (answer.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    const isModOrAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
+    if (answer.author.toString() !== req.user._id.toString() && !isModOrAdmin) {
       throw new AppError('Not authorized', 403);
     }
 
@@ -213,6 +215,7 @@ exports.acceptAnswer = async (req, res, next) => {
       });
     }
 
+    broadcastLeaderboard();
     res.json({ answer, message: 'Answer accepted' });
   } catch (err) {
     next(err);
@@ -251,6 +254,7 @@ exports.unacceptAnswer = async (req, res, next) => {
     // Remove reputation reward
     await User.findByIdAndUpdate(answer.author, { $inc: { reputation: -15 } });
 
+    broadcastLeaderboard();
     res.json({ answer, message: 'Answer unaccepted' });
   } catch (err) {
     next(err);
@@ -261,6 +265,10 @@ exports.toggleSolvedMyDoubt = async (req, res, next) => {
   try {
     const answer = await Answer.findById(req.params.id);
     if (!answer || answer.isDeleted) throw new AppError('Answer not found', 404);
+
+    if (answer.author.toString() === req.user._id.toString()) {
+      throw new AppError('You cannot mark your own answer as solving your doubt', 400);
+    }
 
     const userId = req.user._id;
     const alreadySolved = answer.solvedByUsers.some(u => u.toString() === userId.toString());
@@ -280,6 +288,7 @@ exports.toggleSolvedMyDoubt = async (req, res, next) => {
       solvedMyDoubtCount: answer.solvedMyDoubtCount,
     });
 
+    broadcastLeaderboard();
     res.json({
       solvedMyDoubtCount: answer.solvedMyDoubtCount,
       hasSolvedMyDoubt: !alreadySolved,

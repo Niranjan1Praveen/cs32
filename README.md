@@ -43,7 +43,7 @@ cd backend && npm run seed
 ```
 
 This reads `faqs-complete.json` and `metadata.json` to populate MongoDB with 13 FAQ categories and 126 FAQ items, plus test users:
-- **Admin:** `admin@quorafaq.com` / `admin123`
+- **Admin:** `aduorafamin@qq.com` / `admin123`
 - **Moderator:** `mod@quorafaq.com` / `mod123`
 - **Students:** `alice@test.com`, `bob@test.com`, `charlie@test.com` (password: `test123`)
 
@@ -60,13 +60,29 @@ cd frontend && npm run dev
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000/api
 
-### Running with Docker Compose
+### Running with Docker Compose (Recommended for Windows/Mac)
+
+This is the easiest way to run the platform on any OS without installing Node.js, MongoDB, Redis, or Elasticsearch locally.
 
 ```bash
-bash podman/deploy.sh
+# Option 1: Use the setup script (recommended for Windows/Mac)
+./setup-docker.sh
+
+# Option 2: Direct docker-compose
+docker-compose up --build -d
 ```
 
-This starts all services (MongoDB, Redis, Elasticsearch, backend, frontend, Nginx). Access the app at http://localhost:8080.
+This spins up the complete development environment (MongoDB, Redis, Elasticsearch, Backend, Frontend). Access the application directly at http://localhost:3000.
+
+**For Windows (Docker Desktop WSL2):**
+- Ensure WSL2 is installed and Docker Desktop is configured to use it
+- Allocate at least 4GB RAM in Docker Desktop settings
+- Run from WSL2 terminal or Git Bash
+
+**For macOS (Docker Desktop):**
+- Allocate at least 4GB RAM in Docker Desktop settings
+- Apple Silicon (M1/M2/M3): Docker Desktop handles ARM64 natively
+- Intel: Standard amd64 builds work automatically
 
 ## Project Structure
 
@@ -82,16 +98,22 @@ faq-site/
 │   ├── services/         # ES search, recommendations, analytics, moderation
 │   ├── socket/           # Socket.IO real-time setup
 │   └── utils/            # Helpers, validators, permissions
+│   ├── socket/           # Socket.IO real-time setup
+│   └── utils/            # Helpers, validators, permissions
 ├── frontend/             # Next.js 14 app (port 3000)
 │   ├── app/              # App Router pages (faqs, questions, admin, auth, etc.)
 │   ├── components/       # Shared React components
 │   ├── context/          # Auth, Socket, Theme, Keyboard providers
 │   ├── hooks/            # Custom hooks (list keyboard navigation)
 │   ├── lib/              # API client & utilities
+│   ├── services/         # Frontend services (admin analytics, etc.)
 │   └── styles/           # Global CSS with Tailwind
 ├── nginx/                # Nginx reverse proxy config
 ├── podman/               # Podman/Docker deployment files
 ├── kafka/                # Optional Kafka docker-compose
+├── docker-compose.yml    # Multi-service container orchestration
+├── .dockerignore         # Docker build context exclusions
+├── setup-docker.sh       # Cross-platform Docker setup script
 ├── faqs-complete.json    # 126 FAQ items (seed data)
 └── metadata.json         # Category metadata
 ```
