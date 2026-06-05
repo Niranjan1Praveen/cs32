@@ -47,8 +47,12 @@ async function enqueueEmail({ to, userName, subject, body, contentTitle }) {
     
     // Inject personalization into body
     const timestamp = new Date().toISOString();
+    const formattedSentTime = new Date(timestamp).toLocaleString('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour12: true
+    }) + ' IST';
     const titleText = contentTitle || finalSubject;
-    const finalBody = `Hi ${userName},\n\n${body}\n\n---\nTopic: ${titleText}\nSent: ${timestamp}`;
+    const finalBody = `Hi ${userName},\n\n${body}\n\n---\nTopic: ${titleText}\nSent: ${formattedSentTime}`;
     
     let finalHtml = '';
     try {

@@ -148,7 +148,7 @@ function getHtmlTemplate(userName, subject, body, contentTitle, timestamp) {
         <div>Empowering peer-to-peer knowledge exchange</div>
         <div class="metadata">
           <div class="metadata-row"><strong>Topic:</strong> ${contentTitle || subject}</div>
-          <div class="metadata-row"><strong>Sent:</strong> ${new Date(timestamp).toLocaleString()}</div>
+          <div class="metadata-row"><strong>Sent:</strong> ${new Date(timestamp).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', hour12: true })} IST</div>
           <div class="metadata-row">This is an automated system notification from your subscription.</div>
         </div>
       </div>

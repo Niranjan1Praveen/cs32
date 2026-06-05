@@ -533,6 +533,7 @@ Medium-Impact Quality of Life
      * Updated the Google authentication registration flow to check and create unique usernames case-insensitively.
      * Allowed suspended accounts to view public content but restricted them from write/mutation operations (POST/PUT/PATCH/DELETE).
      * Added a visual "Owner" badge beside the owner account in both profile and admin pages.
+     * Formatted the sent time in both HTML and plain-text email notifications to explicitly use India Standard Time (`Asia/Kolkata` with `hour12: true`) and append the `IST` timezone identifier, preventing timezone discrepancies on the hosting servers.
 
 
 
