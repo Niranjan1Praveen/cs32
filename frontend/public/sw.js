@@ -1,5 +1,5 @@
-const CACHE_NAME = 'prashnasarathi-pwa-cache-v4';
-const DATA_CACHE_NAME = 'prashnasarathi-data-cache-v4';
+const CACHE_NAME = 'prashnasarathi-pwa-cache-v5';
+const DATA_CACHE_NAME = 'prashnasarathi-data-cache-v5';
 
 // Helper to fetch with a timeout fallback
 function fetchWithTimeout(request, timeout = 1000) {
@@ -107,18 +107,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle HTML document and Next.js static asset matching
+  // Handle HTML document requests (Navigation) - Network-First
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback if offline
+          return caches.match(request).then((res) => {
+            if (res) return res;
+            return caches.match('/', { ignoreSearch: true });
+          });
+        })
+    );
+    return;
+  }
+
+  // Handle static assets (JS chunks, CSS, images, etc.) - Cache-First
   event.respondWith(
     caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
-      // Return cached version if found
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // Fetch from network and cache for next time
       return fetch(request)
         .then((response) => {
-          // Don't cache invalid/external/range responses
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
@@ -131,10 +152,8 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // If offline and navigate mode, serve the pre-cached home page
-          if (request.mode === 'navigate') {
-            return caches.match('/', { ignoreSearch: true });
-          }
+          // Fallback if offline
+          return new Response('Offline asset not available', { status: 503, statusText: 'Offline' });
         });
     })
   );
