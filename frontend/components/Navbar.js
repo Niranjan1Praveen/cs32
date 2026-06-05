@@ -125,7 +125,7 @@ export default function Navbar({ onSearch }) {
                         <img
                           src={user.avatar ? ((user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? user.avatar : `/api/uploads${user.avatar}`) : user.avatarUrl}
                           alt={user.displayName || user.username}
-                          className="w-6.5 h-6.5 rounded-md object-cover border border-[var(--color-border)]/40"
+                          className="w-7 h-7 rounded-md object-cover border border-[var(--color-border)]/40"
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.style.display = 'none';
@@ -133,7 +133,7 @@ export default function Navbar({ onSearch }) {
                         />
                       ) : null}
                       {!(user.avatar || user.avatarUrl) && (
-                        <div className="w-6.5 h-6.5 rounded-md bg-[var(--color-primary-subtle)] text-[var(--color-primary)] border border-[var(--color-primary)]/20 flex items-center justify-center text-xs font-semibold">
+                        <div className="w-7 h-7 rounded-md bg-[var(--color-primary-subtle)] text-[var(--color-primary)] border border-[var(--color-primary)]/20 flex items-center justify-center text-xs font-semibold">
                           {getInitials(user.displayName || user.username)}
                         </div>
                       )}
