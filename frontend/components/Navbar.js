@@ -6,12 +6,14 @@ import { useTheme } from '@/context/ThemeContext';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import { getInitials } from '@/lib/utils';
 import { useNotifications } from '@/context/NotificationContext';
+import usePWA from '@/pwa/usePWA';
 
 export default function Navbar({ onSearch }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const notifications = useNotifications();
   const unreadCount = notifications ? notifications.unreadCount : 0;
+  const { isInstallable, installApp } = usePWA();
   const [searchQuery, setSearchQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -65,6 +67,17 @@ export default function Navbar({ onSearch }) {
                   <Link href="/admin" className="px-2 py-1 text-xs font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-md transition-colors">
                     Admin
                   </Link>
+                )}
+                {isInstallable && (
+                  <button
+                    onClick={installApp}
+                    className="px-2 py-1 text-xs font-semibold text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    <span>Install App</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -232,6 +245,17 @@ export default function Navbar({ onSearch }) {
                 <Link href="/tags" className="flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] rounded-lg transition-colors">Tags</Link>
                 <Link href="/users" className="flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] rounded-lg transition-colors">Community</Link>
                 {user && <Link href="/questions/ask" className="flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--color-primary)] font-medium hover:bg-[var(--color-primary-subtle)] rounded-lg transition-colors">Ask Question</Link>}
+                {isInstallable && (
+                  <button
+                    onClick={installApp}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-emerald-500 font-semibold hover:bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    <span>Install App</span>
+                  </button>
+                )}
               </div>
             </div>
           )}

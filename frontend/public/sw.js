@@ -1,5 +1,5 @@
-const CACHE_NAME = 'prashnasarathi-pwa-cache-v1';
-const DATA_CACHE_NAME = 'prashnasarathi-data-cache-v1';
+const CACHE_NAME = 'prashnasarathi-pwa-cache-v2';
+const DATA_CACHE_NAME = 'prashnasarathi-data-cache-v2';
 
 // Static files to cache immediately on install
 const STATIC_ASSETS = [
@@ -20,12 +20,19 @@ const STATIC_ASSETS = [
   '/icon.png'
 ];
 
-// Install Event: Cache static assets
+// Install Event: Cache static assets individually to prevent single-failure halts
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       console.log('[Service Worker] Pre-caching static assets');
-      return cache.addAll(STATIC_ASSETS);
+      for (const asset of STATIC_ASSETS) {
+        try {
+          await cache.add(asset);
+          console.log(`[Service Worker] Successfully pre-cached: ${asset}`);
+        } catch (err) {
+          console.warn(`[Service Worker] Failed to pre-cache asset during install: ${asset}. Error:`, err);
+        }
+      }
     }).then(() => self.skipWaiting())
   );
 });
@@ -46,7 +53,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event: Cache-first for static assets, network-first for APIs/dynamic contents
+// Fetch Event: Cache-first for static/Next.js files, Network-First for API calls
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -61,7 +68,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // If response is valid, clone and store it in data cache
           if (response.status === 200) {
             const responseClone = response.clone();
             caches.open(DATA_CACHE_NAME).then((cache) => {
@@ -71,23 +77,28 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Offline fallback from data cache
-          return caches.match(request);
+          // Offline fallback: try to match exactly, then try with ignoreSearch
+          return caches.match(request).then((res) => {
+            if (res) return res;
+            return caches.match(request, { ignoreSearch: true, cacheName: DATA_CACHE_NAME });
+          });
         })
     );
     return;
   }
 
-  // Handle Next.js Static Files and Page Assets (Cache-First, fallback to Network)
+  // Handle HTML document and Next.js static asset matching
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
+    caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
+      // Return cached version if found
       if (cachedResponse) {
         return cachedResponse;
       }
 
+      // Fetch from network and cache for next time
       return fetch(request)
         .then((response) => {
-          // Don't cache range responses, external fonts, or non-ok responses
+          // Don't cache invalid/external/range responses
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
@@ -100,16 +111,16 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // If page navigation fails (offline and not in cache), return main page
+          // If offline and navigate mode, serve the pre-cached home page
           if (request.mode === 'navigate') {
-            return caches.match('/');
+            return caches.match('/', { ignoreSearch: true });
           }
         });
     })
   );
 });
 
-// Push Notification Listeners (Merged from push-service-worker.js)
+// Push Notification Listeners
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 

@@ -2,11 +2,10 @@
 import { useEffect } from 'react';
 import { registerServiceWorker } from './pwaRegister';
 import usePWA from './usePWA';
-import PwaInstallBanner from './PwaInstallBanner';
 import OfflineIndicator from './OfflineIndicator';
 
 export default function PwaProvider({ children }) {
-  const { isInstallable, installApp, isOnline } = usePWA();
+  const { isOnline } = usePWA();
 
   useEffect(() => {
     // Register PWA service worker on mount
@@ -16,7 +15,6 @@ export default function PwaProvider({ children }) {
   return (
     <>
       {children}
-      <PwaInstallBanner isInstallable={isInstallable} installApp={installApp} />
       <OfflineIndicator isOnline={isOnline} />
     </>
   );
