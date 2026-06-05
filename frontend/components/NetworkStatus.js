@@ -3,7 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 
 export default function NetworkStatus() {
-  const [status, setStatus] = useState('good'); // 'good' | 'slow' | 'offline'
+  const [status, setStatus] = useState(() => {
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      return 'offline';
+    }
+    return 'good';
+  });
 
   useEffect(() => {
     const checkNetwork = () => {
@@ -56,7 +61,7 @@ export default function NetworkStatus() {
           }
         }
       } catch (err) {
-        if (!navigator.onLine) {
+        if (!navigator.onLine || err.message === 'Failed to fetch' || err.name === 'TypeError') {
           setStatus('offline');
         } else if (err.name === 'AbortError') {
           setStatus('slow');
