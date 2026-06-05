@@ -1,5 +1,25 @@
-const CACHE_NAME = 'prashnasarathi-pwa-cache-v2';
-const DATA_CACHE_NAME = 'prashnasarathi-data-cache-v2';
+const CACHE_NAME = 'prashnasarathi-pwa-cache-v3';
+const DATA_CACHE_NAME = 'prashnasarathi-data-cache-v3';
+
+// Helper to fetch with a timeout fallback
+function fetchWithTimeout(request, timeout = 1000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Network timeout'));
+    }, timeout);
+
+    fetch(request).then(
+      (response) => {
+        clearTimeout(timer);
+        resolve(response);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
 
 // Static files to cache immediately on install
 const STATIC_ASSETS = [
@@ -53,7 +73,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event: Cache-first for static/Next.js files, Network-First for API calls
+// Fetch Event: Cache-first for static/Next.js files, Network-First (with timeout) for API calls
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -66,7 +86,7 @@ self.addEventListener('fetch', (event) => {
   // Handle API Requests (FAQs, search, categories, user details, etc.)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(request)
+      fetchWithTimeout(request, 1000)
         .then((response) => {
           if (response.status === 200) {
             const responseClone = response.clone();
