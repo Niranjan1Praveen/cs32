@@ -155,7 +155,7 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         
         {/* Tech Hero Header */}
-        <section className="max-w-2xl mb-12 mt-4 text-left">
+        <section className="max-w-2xl mb-12 mt-4 text-center mx-auto flex flex-col items-center">
           <div className="inline-flex items-center gap-1.5 font-mono text-[10px] text-[var(--color-primary)] bg-[var(--color-primary-subtle)] border border-[var(--color-primary)]/20 px-2.5 py-0.5 rounded-full mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] animate-pulse"></span>
             KNOWLEDGE BASE
@@ -168,7 +168,7 @@ export default function HomePage() {
           </p>
 
           {/* Hero Search */}
-          <form onSubmit={handleSearchSubmit} className="relative mb-4">
+          <form onSubmit={handleSearchSubmit} className="relative mb-4 w-full max-w-xl">
             <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] focus-within:border-[var(--color-primary)]/50 focus-within:ring-2 focus-within:ring-[var(--color-primary-subtle)] transition-all">
               <svg className="w-4 h-4 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
