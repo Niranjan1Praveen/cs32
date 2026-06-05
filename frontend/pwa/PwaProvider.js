@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { registerServiceWorker } from './pwaRegister';
+import AppUpdateChecker from '../components/AppUpdateChecker';
 
 export default function PwaProvider({ children }) {
   useEffect(() => {
@@ -33,6 +34,7 @@ export default function PwaProvider({ children }) {
 
   return (
     <>
+      <AppUpdateChecker />
       {children}
     </>
   );

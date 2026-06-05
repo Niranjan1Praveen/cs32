@@ -73,6 +73,17 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
 });
 
+// App Version check for in-app updates
+app.get('/api/app-version', (req, res) => {
+  res.json({
+    latestVersion: '1.1.0',
+    latestVersionCode: 2,
+    apkUrl: 'https://prashnasarathi.vercel.app/downloads/prashnasarathi-app.apk',
+    changelog: 'Performance improvements, smoother client-side navigation transitions, and native deep linking support.',
+    forceUpdate: false
+  });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/questions', questionRoutes);
