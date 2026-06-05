@@ -1,5 +1,3 @@
-import toast from 'react-hot-toast';
-
 export function registerServiceWorker() {
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     const register = () => {
@@ -15,22 +13,14 @@ export function registerServiceWorker() {
             console.log('[PWA] Push notification support available.');
           }
 
-          // Monitor for updates and notify/reload to apply changes
+          // Monitor for updates and reload to apply changes
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   console.log('[PWA] New service worker version installed. Refreshing cache.');
-                  toast.success('App updated! Reloading to apply changes...', {
-                    id: 'pwa-update-toast',
-                    duration: 3000,
-                    position: 'top-right',
-                    icon: '🔄'
-                  });
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 2000);
+                  window.location.reload();
                 }
               });
             }
