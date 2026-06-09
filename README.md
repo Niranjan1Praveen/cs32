@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="screenshots/logo/logo-banner.png" alt="Platform Banner" width="100%">
+  <img src="screenshots/logo/logo-banner.png" alt="Platform Banner" width="40%">
 </div>
 
 # PrashnaSārathi (प्रश्नसारथि) — Community Q&A and FAQ Platform
