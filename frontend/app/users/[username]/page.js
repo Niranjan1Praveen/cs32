@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import QuestionCard from '@/components/QuestionCard';
@@ -11,6 +11,10 @@ import toast from 'react-hot-toast';
 
 export default function UserProfilePage() {
   const { username } = useParams();
+<<<<<<< HEAD
+=======
+  const router = useRouter();
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
   const { user: currentUser, updateProfile } = useAuth();
   const [user, setUser] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -24,7 +28,13 @@ export default function UserProfilePage() {
   // Edit profile states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editDisplayName, setEditDisplayName] = useState('');
+<<<<<<< HEAD
   const [editBio, setEditBio] = useState('');
+=======
+  const [editUsername, setEditUsername] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editPhase, setEditPhase] = useState('pre');
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
   const [editAvatarFile, setEditAvatarFile] = useState(null);
   const [updating, setUpdating] = useState(false);
 
@@ -54,7 +64,13 @@ export default function UserProfilePage() {
     try {
       const formData = new FormData();
       formData.append('displayName', editDisplayName.trim());
+<<<<<<< HEAD
       formData.append('bio', editBio.trim());
+=======
+      formData.append('username', editUsername.trim());
+      formData.append('bio', editBio.trim());
+      formData.append('currentPhase', editPhase);
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
       if (editAvatarFile) {
         formData.append('avatar', editAvatarFile);
       }
@@ -62,6 +78,12 @@ export default function UserProfilePage() {
       setUser(prev => ({ ...prev, ...data.user }));
       setShowEditModal(false);
       setEditAvatarFile(null);
+<<<<<<< HEAD
+=======
+      if (data.user.username !== username) {
+        router.push(`/users/${data.user.username}`);
+      }
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     } catch (err) {
       toast.error(err.message || 'Failed to update profile');
     } finally {
@@ -71,7 +93,11 @@ export default function UserProfilePage() {
 
   const getAvatarUrl = (avatar) => {
     if (!avatar) return null;
+<<<<<<< HEAD
     if (avatar.startsWith('http')) return avatar;
+=======
+    if (avatar.startsWith('http') || avatar.startsWith('data:')) return avatar;
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     return `${api.baseUrl.replace('/api', '')}${avatar}`;
   };
 
@@ -104,9 +130,15 @@ export default function UserProfilePage() {
       <div className="bg-[var(--color-bg-secondary)]/80 backdrop-blur-md border border-[var(--color-border)]/60 rounded-2xl p-6 mb-8 relative">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
           <div className="flex items-start gap-4 flex-1">
+<<<<<<< HEAD
             {user.avatar ? (
               <img
                 src={getAvatarUrl(user.avatar)}
+=======
+            {user.avatar || user.avatarUrl ? (
+              <img
+                src={getAvatarUrl(user.avatar || user.avatarUrl)}
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                 alt={user.displayName || user.username}
                 className="w-16 h-16 rounded-full object-cover shrink-0 border-2 border-[var(--color-primary)]/20"
               />
@@ -124,16 +156,31 @@ export default function UserProfilePage() {
                 <span className="flex items-center gap-1">
                   <span className="font-bold text-[var(--color-primary)] text-sm">{user.reputation}</span> reputation
                 </span>
+<<<<<<< HEAD
+=======
+                {user.currentPhase && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold uppercase tracking-wider text-[9px]">
+                    🚀 {user.currentPhase.replace('_', ' ')}
+                  </span>
+                )}
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                 {user.location && <span>📍 {user.location}</span>}
                 {user.website && (
                   <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline">
                     🔗 {user.website.replace(/^https?:\/\//, '')}
                   </a>
                 )}
+<<<<<<< HEAD
                 <span>📅 Joined {formatDate(user.createdAt)}</span>
               </div>
 
               <div className="flex items-center gap-6 mt-4 pt-3 border-t border-[var(--color-border)]/40">
+=======
+                <span>📅 Joined {formatDate(user.createdAt, true)}</span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-4 mt-4 pt-3 border-t border-[var(--color-border)]/40">
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                 <div className="text-center">
                   <p className="text-lg font-extrabold text-[var(--color-text)]">{user.questionCount || 0}</p>
                   <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">Questions</p>
@@ -142,12 +189,35 @@ export default function UserProfilePage() {
                   <p className="text-lg font-extrabold text-[var(--color-text)]">{user.answerCount || 0}</p>
                   <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">Answers</p>
                 </div>
+<<<<<<< HEAD
+=======
+                <div className="text-center">
+                  <p className="text-lg font-extrabold text-[var(--color-text)]">{user.totalLikes || 0}</p>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">Likes Received</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-extrabold text-[var(--color-text)]">{user.totalVotes || 0}</p>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">Votes Received</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-extrabold text-[var(--color-text)]">{user.totalBookmarks || 0}</p>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">Bookmarks</p>
+                </div>
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
               </div>
             </div>
           </div>
 
           <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4 self-stretch sm:self-auto shrink-0">
+<<<<<<< HEAD
             {user.role !== 'user' && (
+=======
+            {user.isOwner ? (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                Owner
+              </span>
+            ) : user.role !== 'user' && (
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
               <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                 user.role === 'admin' 
                   ? 'bg-red-500/10 text-red-600 dark:text-red-400' 
@@ -160,7 +230,13 @@ export default function UserProfilePage() {
               <button
                 onClick={() => {
                   setEditDisplayName(user.displayName || '');
+<<<<<<< HEAD
                   setEditBio(user.bio || '');
+=======
+                  setEditUsername(user.username || '');
+                  setEditBio(user.bio || '');
+                  setEditPhase(user.currentPhase || 'pre');
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                   setShowEditModal(true);
                 }}
                 className="px-4 py-2 text-xs font-semibold rounded-xl border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] transition-all flex items-center gap-1.5 bg-[var(--color-bg-secondary)]/80 sm:mt-auto"
@@ -229,7 +305,7 @@ export default function UserProfilePage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {questions.map(q => <QuestionCard key={q._id} question={q} />)}
+            {questions.map(q => <QuestionCard key={q._id} question={q} absoluteDate={true} />)}
           </div>
         )
       ) : tab === 'answers' ? (
@@ -250,7 +326,11 @@ export default function UserProfilePage() {
                   <span className="text-xs text-[var(--color-text-muted)]">{answer.upvotes || 0} votes</span>
                 </div>
                 <p className="text-sm text-[var(--color-text-secondary)] line-clamp-3 leading-relaxed">{answer.body?.slice(0, 300)}</p>
+<<<<<<< HEAD
                 <p className="text-[10px] text-[var(--color-text-muted)] mt-3">Answered {formatDate(answer.createdAt)}</p>
+=======
+                <p className="text-[10px] text-[var(--color-text-muted)] mt-3">Answered {formatDate(answer.createdAt, true)}</p>
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
               </Link>
             ))}
           </div>
@@ -287,7 +367,7 @@ export default function UserProfilePage() {
             ) : (
               <div className="space-y-4">
                 {savedQuestions.map(item => (
-                  <QuestionCard key={item._id} question={item.question} />
+                  <QuestionCard key={item._id} question={item.question} absoluteDate={true} />
                 ))}
               </div>
             )
@@ -313,6 +393,20 @@ export default function UserProfilePage() {
             <h3 className="text-lg font-semibold text-[var(--color-text)] mb-4">Edit Profile</h3>
             <form onSubmit={handleUpdateProfile}>
               <div className="mb-4">
+<<<<<<< HEAD
+=======
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">Username</label>
+                <input
+                  type="text"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  placeholder="e.g. johndoe"
+                  className="w-full px-3.5 py-2.5 text-sm border border-[var(--color-border)] rounded-xl bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                 <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">Display Name</label>
                 <input
                   type="text"
@@ -333,6 +427,23 @@ export default function UserProfilePage() {
                   maxLength={500}
                 />
               </div>
+<<<<<<< HEAD
+=======
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">Current Project Phase</label>
+                <select
+                  value={editPhase}
+                  onChange={(e) => setEditPhase(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-sm border border-[var(--color-border)] rounded-xl bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]"
+                >
+                  <option value="pre">Pre-Internship / Getting Started</option>
+                  <option value="phase1_coursework">Phase 1 - Coursework & LMS</option>
+                  <option value="phase1_completed">Phase 1 Completed - Team Formation</option>
+                  <option value="phase2_project">Phase 2 - Project & Interviews</option>
+                  <option value="completed">Completed / Alumni</option>
+                </select>
+              </div>
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
               <div className="mb-6">
                 <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">Profile Picture</label>
                 <input

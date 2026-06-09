@@ -7,7 +7,12 @@ const ctrl = require('../controllers/authController');
 
 router.post('/register', authLimiter, registerValidation, ctrl.register);
 router.post('/login', authLimiter, loginValidation, ctrl.login);
+<<<<<<< HEAD
+=======
+router.post('/google', authLimiter, ctrl.googleLogin);
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
 router.get('/me', auth, ctrl.getMe);
 router.put('/profile', auth, upload.single('avatar'), ctrl.updateProfile);
+router.post('/accept-terms', auth, ctrl.acceptTerms);
 
 module.exports = router;

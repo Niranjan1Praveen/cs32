@@ -4,6 +4,22 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatDate, truncate } from '@/lib/utils';
 import api from '@/lib/api';
+import RecommendedFAQs from '@/components/RecommendedFAQs';
+
+const getSearchResultLink = (result) => {
+  const typeLabel = result._type || (result.body !== undefined ? 'question' : result.description !== undefined ? 'faq' : 'user');
+  if (typeLabel === 'question') {
+    return `/questions/${result.id}`;
+  } else if (typeLabel === 'faq') {
+    if (result.id && result.id.includes('_')) {
+      const [faqId, itemId] = result.id.split('_');
+      return `/faqs/${result.slug || faqId}#${itemId}`;
+    }
+    return `/faqs/${result.slug || result.faqId || result.id}`;
+  } else {
+    return `/users/${result.username}`;
+  }
+};
 
 function SearchPageContent() {
   const searchParams = useSearchParams();
@@ -27,14 +43,20 @@ function SearchPageContent() {
   }, [searchParams]);
 
   const performSearch = async (q, t) => {
-    if (!q) return;
+    if (!q || !q.trim()) {
+      setResults([]);
+      setTotal(0);
+      return;
+    }
     setLoading(true);
     try {
-      const data = await api.get('/search', { q, type: t });
+      const data = await api.get('/search', { q: q.trim(), type: t });
       setResults(data.results || []);
       setTotal(data.total || 0);
     } catch (err) {
       console.error(err);
+      setResults([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -49,18 +71,31 @@ function SearchPageContent() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<<<<<<< HEAD
       <h1 className="text-2xl font-bold text-[var(--color-text)] mb-6">Search</h1>
+=======
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-primary)] to-purple-400">Search</span>
+        </h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-2">Find questions, FAQs, and community members</p>
+      </div>
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
 
-      <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search questions, FAQs, users..."
-          className="input flex-1"
-          autoFocus
-        />
-        <button type="submit" className="btn-primary">Search</button>
+      <form onSubmit={handleSubmit} className="mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search questions, FAQs, users..."
+            className="w-full px-4 py-3 pl-12 border border-[var(--color-border)]/60 rounded-xl text-sm bg-[var(--color-bg-secondary)] text-[var(--color-text)] dark:text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all"
+            autoFocus
+          />
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
       </form>
 
       {/* Type filter */}
@@ -70,7 +105,13 @@ function SearchPageContent() {
             key={t}
             onClick={() => { setType(t); if (query) router.push(`/search?q=${encodeURIComponent(query)}&type=${t}`); }}
             className={`px-3 py-1.5 text-sm rounded-lg font-medium capitalize transition-colors ${
+<<<<<<< HEAD
               type === t ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+=======
+              type === t
+                ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text)]'
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
             }`}
           >
             {t || 'All'}
@@ -96,10 +137,24 @@ function SearchPageContent() {
         </div>
       )}
 
+      {!searchParams.get('q') && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">💡</span>
+            <h3 className="text-base font-bold text-[var(--color-text)] bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-primary)] to-purple-400">Recommended FAQs</h3>
+          </div>
+          <RecommendedFAQs limit={5} layout="grid" />
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-4">
           {[1,2,3].map(i => (
+<<<<<<< HEAD
             <div key={i} className="card p-6 animate-pulse">
+=======
+            <div key={i} className="bg-[var(--color-bg-secondary)]/60 border border-[var(--color-border)]/40 rounded-2xl p-6 animate-pulse">
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
               <div className="h-5 bg-[var(--color-border)] rounded w-3/4 mb-3" />
               <div className="h-4 bg-[var(--color-border)] rounded w-full mb-2" />
               <div className="h-4 bg-[var(--color-border)] rounded w-1/2" />
@@ -107,9 +162,52 @@ function SearchPageContent() {
           ))}
         </div>
       ) : results.length === 0 && searchParams.get('q') ? (
+<<<<<<< HEAD
         <div className="card p-12 text-center">
           <h3 className="text-lg font-medium text-[var(--color-text)] mb-2">No results found</h3>
           <p className="text-[var(--color-text-secondary)]">Try different keywords or browse categories</p>
+=======
+        <div className="space-y-8">
+          <div className="bg-[var(--color-bg-secondary)] border border-[var(--color-border)]/60 rounded-2xl p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center">
+              <svg className="w-8 h-8 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-[var(--color-text)] mb-2">No results found for "{searchParams.get('q')}"</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-8">It seems this question or topic is new to the platform.</p>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href={`/questions/ask?title=${encodeURIComponent(searchParams.get('q') || '')}`}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold bg-[var(--color-primary)] text-white rounded-xl hover:opacity-90 shadow-md shadow-[var(--color-primary)]/10 hover:shadow-lg transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Do you want to ask a question?
+              </Link>
+              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">or</span>
+              <Link
+                href={`/faqs?add=true`}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-[var(--color-text)] rounded-xl hover:bg-[var(--color-bg-secondary)] hover:border-[var(--color-primary)]/30 transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                Create a new FAQ?
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-6 bg-[var(--color-bg-secondary)]/30 border border-[var(--color-border)]/40 rounded-2xl">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">💡</span>
+              <h3 className="text-base font-bold text-[var(--color-text)] bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-primary)] to-purple-400">You might find these helpful</h3>
+            </div>
+            <RecommendedFAQs limit={5} layout="grid" />
+          </div>
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
         </div>
       ) : (
         <>
@@ -119,10 +217,14 @@ function SearchPageContent() {
               const typeLabel = result._type || (result.body !== undefined ? 'question' : result.description !== undefined ? 'faq' : 'user');
               const title = result.title || result.question || result.faqTitle || result.displayName || result.username || 'Untitled';
               const desc = result.body || result.description || result.answer || result.bio || '';
+<<<<<<< HEAD
               const link = typeLabel === 'question' ? `/questions/${result.id}` : typeLabel === 'faq' ? `/faqs/${result.faqId || result.slug || result.id}` : `/users/${result.username}`;
+=======
+              const link = getSearchResultLink(result);
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
 
               return (
-                <Link key={result.id} href={link} className="card-hover p-4 block">
+                <Link key={result.id} href={link} className="bg-[var(--color-bg-secondary)]/80 backdrop-blur-md border border-[var(--color-border)]/60 rounded-2xl p-5 block transition-all duration-300 hover:shadow-lg hover:border-[var(--color-primary)]/30 hover:-translate-y-0.5">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="badge-gray text-xs capitalize">{typeLabel}</span>
                     {result.score && <span className="text-xs text-[var(--color-text-secondary)]">Relevance: {Math.round(result.score * 100)}%</span>}

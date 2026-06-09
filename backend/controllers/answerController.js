@@ -20,37 +20,77 @@ exports.createAnswer = async (req, res, next) => {
     if (!question || question.isDeleted) throw new AppError('Question not found', 404);
     if (question.status === 'closed') throw new AppError('Question is closed', 400);
 
+    let visibility = req.body.visibility;
+    if (!visibility) {
+      if (req.user.trustLevel === 'trusted' || req.user.trustLevel === 'regular') {
+        visibility = 'public';
+      } else if (req.user.premodApproved) {
+        visibility = 'public';
+      } else {
+        const aCount = await Answer.countDocuments({ author: req.user._id });
+        visibility = aCount < 5 ? 'pending' : 'public';
+      }
+    }
+
     const answer = await Answer.create({
       body: req.body.body,
       question: question._id,
       author: req.user._id,
       confidenceLevel: req.body.confidenceLevel || null,
+      visibility,
+      triggeredRule: req.body.triggeredRule || undefined
     });
 
-    question.answerCount += 1;
-    question.lastActivity = new Date();
-    await question.save();
+    const AuditLog = require('../models/AuditLog');
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'create_answer',
+      targetId: answer._id,
+      targetType: 'Answer',
+      reason: `Created answer on question: "${question.title}"`
+    });
 
     await User.findByIdAndUpdate(req.user._id, { $inc: { answerCount: 1 } });
 
     const populated = await Answer.findById(answer._id)
       .populate('author', 'username displayName avatar reputation');
 
-    // Notify question author
-    if (question.author.toString() !== req.user._id.toString()) {
-      await Notification.create({
-        recipient: question.author,
-        type: 'new_answer',
-        title: 'New answer on your question',
-        message: `${req.user.displayName || req.user.username} answered "${question.title}"`,
-        link: `/questions/${question._id}`,
-        referenceType: 'Answer',
-        reference: answer._id,
-      });
-      emitToUser(question.author.toString(), 'notification:new', { answer: populated });
-    }
+    if (visibility === 'public') {
+      question.answerCount += 1;
+      question.lastActivity = new Date();
+      await question.save();
 
-    emitToQuestion(question._id.toString(), 'answer:new', { answer: populated });
+      // Notify question author
+      if (question.author.toString() !== req.user._id.toString()) {
+        await Notification.create({
+          recipient: question.author,
+          type: 'new_answer',
+          title: 'New answer on your question',
+          message: `${req.user.displayName || req.user.username} answered "${question.title}"`,
+          link: `/questions/${question._id}`,
+          referenceType: 'Answer',
+          reference: answer._id,
+        });
+        emitToUser(question.author.toString(), 'notification:new', { answer: populated });
+
+        // Send email notification to question author
+        try {
+          const { sendAnswerPostedNotification } = require('../services/emailService');
+          await sendAnswerPostedNotification(populated, question);
+        } catch (emailErr) {
+          console.error('Email notification error:', emailErr.message);
+        }
+      }
+
+      emitToQuestion(question._id.toString(), 'answer:new', { answer: populated });
+    } else if (visibility === 'pending') {
+      try {
+        const { emitToAdmin } = require('../socket');
+        emitToAdmin('moderation:updated', { action: 'new_pending_answer', answerId: answer._id });
+      } catch (err) {
+        console.error('Socket notification error for pending answer:', err.message);
+      }
+    }
 
     res.status(201).json({ answer: populated });
   } catch (err) {
@@ -63,6 +103,24 @@ exports.getAnswers = async (req, res, next) => {
     const { page, limit, skip } = paginate(req.query.page, req.query.limit);
     const questionId = new mongoose.Types.ObjectId(req.params.questionId);
     const filter = { question: questionId, isDeleted: false };
+
+    const isModOrAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
+    const currentUserId = req.user ? req.user._id.toString() : null;
+
+    const visibilityConditions = [];
+    if (isModOrAdmin) {
+      // Admins/mods see all answers
+    } else if (currentUserId) {
+      visibilityConditions.push({ visibility: 'public' });
+      visibilityConditions.push({ author: req.user._id });
+    } else {
+      visibilityConditions.push({ visibility: 'public' });
+    }
+
+    if (visibilityConditions.length > 0) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ $or: visibilityConditions });
+    }
 
     const sort = {};
     switch (req.query.sort) {
@@ -125,8 +183,22 @@ exports.updateAnswer = async (req, res, next) => {
       throw new AppError('Not authorized', 403);
     }
 
+    const oldBody = answer.body;
     answer.body = req.body.body || answer.body;
     await answer.save();
+
+    const AuditLog = require('../models/AuditLog');
+    const changeReason = req.body.body && req.body.body !== oldBody 
+      ? `Updated answer body: "${oldBody}" -> "${req.body.body}"`
+      : 'Updated answer';
+
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'update_answer',
+      targetId: answer._id,
+      targetType: 'Answer',
+      reason: changeReason
+    });
 
     const populated = await Answer.findById(answer._id)
       .populate('author', 'username displayName avatar reputation');
@@ -148,7 +220,22 @@ exports.deleteAnswer = async (req, res, next) => {
     answer.isDeleted = true;
     answer.status = 'deleted';
     await answer.save();
-    await Question.findByIdAndUpdate(answer.question, { $inc: { answerCount: -1 } });
+
+    const AuditLog = require('../models/AuditLog');
+    const Question = require('../models/Question');
+    const parentQuestion = await Question.findById(answer.question);
+    const questionTitle = parentQuestion ? parentQuestion.title : 'Unknown Question';
+    
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'delete_answer',
+      targetId: answer._id,
+      targetType: 'Answer',
+      reason: `Deleted answer on question: "${questionTitle}"`
+    });
+
+    const { recalculateAnswerCount } = require('../utils/helpers');
+    await recalculateAnswerCount(answer.question);
     res.json({ message: 'Answer deleted' });
   } catch (err) {
     next(err);
@@ -185,8 +272,13 @@ exports.acceptAnswer = async (req, res, next) => {
       .populate('tags', 'name color');
     await indexQuestion(populatedQuestion);
 
-    // Reward answer author
-    await User.findByIdAndUpdate(answer.author, { $inc: { reputation: 15 } });
+    // Reward answer author reputation (+15) and trustScore (+5)
+    const authorUser = await User.findById(answer.author);
+    if (authorUser) {
+      authorUser.reputation += 15;
+      authorUser.trustScore += 5;
+      await authorUser.save();
+    }
 
     await Notification.create({
       recipient: answer.author,
@@ -213,9 +305,15 @@ exports.acceptAnswer = async (req, res, next) => {
       question.meTooUsers.forEach(userId => {
         emitToUser(userId.toString(), 'notification:new', { questionAnswered: true });
       });
+
+      // Doubt solved email notifications are disabled to prevent non-compliant outbound emails
     }
 
+<<<<<<< HEAD
     broadcastLeaderboard();
+=======
+    await broadcastLeaderboard();
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     res.json({ answer, message: 'Answer accepted' });
   } catch (err) {
     next(err);
@@ -251,10 +349,22 @@ exports.unacceptAnswer = async (req, res, next) => {
       .populate('tags', 'name color');
     await indexQuestion(populatedQuestion);
 
+<<<<<<< HEAD
     // Remove reputation reward
     await User.findByIdAndUpdate(answer.author, { $inc: { reputation: -15 } });
 
     broadcastLeaderboard();
+=======
+    // Remove reputation reward reputation (-15) and trustScore (-5)
+    const authorUser = await User.findById(answer.author);
+    if (authorUser) {
+      authorUser.reputation = Math.max(0, authorUser.reputation - 15);
+      authorUser.trustScore = Math.max(0, authorUser.trustScore - 5);
+      await authorUser.save();
+    }
+
+    await broadcastLeaderboard();
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     res.json({ answer, message: 'Answer unaccepted' });
   } catch (err) {
     next(err);
@@ -288,7 +398,11 @@ exports.toggleSolvedMyDoubt = async (req, res, next) => {
       solvedMyDoubtCount: answer.solvedMyDoubtCount,
     });
 
+<<<<<<< HEAD
     broadcastLeaderboard();
+=======
+    await broadcastLeaderboard();
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     res.json({
       solvedMyDoubtCount: answer.solvedMyDoubtCount,
       hasSolvedMyDoubt: !alreadySolved,

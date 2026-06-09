@@ -1,15 +1,17 @@
 const router = require('express').Router();
 const { auth, optionalAuth, moderatorOrAdmin } = require('../middleware/auth');
 const { questionValidation } = require('../utils/validators');
+const { spamGuard } = require('../middleware/spamGuard');
 const ctrl = require('../controllers/questionController');
 const { flagContent } = require('../services/moderationService');
 
 router.get('/similar', ctrl.findSimilar);
-router.get('/', ctrl.getQuestions);
+router.post('/validate', optionalAuth, ctrl.validateQuestionText);
+router.get('/', optionalAuth, ctrl.getQuestions);
 router.get('/:id', optionalAuth, ctrl.getQuestion);
 router.get('/:id/similar', ctrl.getSimilarQuestions);
 router.get('/:id/related', ctrl.getRelatedQuestions);
-router.post('/', auth, questionValidation, ctrl.createQuestion);
+router.post('/', auth, spamGuard, questionValidation, ctrl.createQuestion);
 router.put('/:id', auth, ctrl.updateQuestion);
 router.patch('/:id/duplicate', auth, ctrl.markAsDuplicate);
 router.patch('/:id/me-too', auth, ctrl.toggleMeToo);
@@ -19,6 +21,7 @@ router.patch('/:id/outdated', auth, ctrl.markOutdated);
 router.patch('/:id/outdated/clear', auth, ctrl.clearOutdated);
 router.patch('/:id/confirm-resolution', auth, ctrl.confirmResolution);
 router.patch('/:id/escalate', auth, ctrl.escalateQuestion);
+router.patch('/:id/urgent', auth, ctrl.selfEscalateAnomaly);
 router.patch('/:id/escalate/resolve', auth, ctrl.resolveEscalation);
 router.get('/escalated', auth, ctrl.getEscalatedQuestions);
 router.patch('/:id/flag', moderatorOrAdmin, ctrl.flagQuestion);

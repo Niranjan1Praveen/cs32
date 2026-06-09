@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev -p 3000",
+    "build": "next build && node scripts/build-sw.js",
     "start": "next start"
   },
   "dependencies": {
@@ -18,6 +18,10 @@
     "@tiptap/extension-table-row": "^3.24.0",
     "@tiptap/react": "^3.24.0",
     "@tiptap/starter-kit": "^3.24.0",
+<<<<<<< HEAD
+=======
+    "firebase": "^12.14.0",
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     "next": "^14.2.15",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -6,8 +6,16 @@ import toast from 'react-hot-toast';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUserState] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const setUser = (u) => {
+    if (u) {
+      u._id = u.id || u._id;
+      u.id = u._id || u.id;
+    }
+    setUserState(u);
+  };
 
   const fetchUser = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -19,7 +27,9 @@ export function AuthProvider({ children }) {
       const data = await api.get('/auth/me');
       setUser(data.user);
     } catch (err) {
-      localStorage.removeItem('token');
+      if (err.status === 401 || err.status === 403) {
+        localStorage.removeItem('token');
+      }
     } finally {
       setLoading(false);
     }
@@ -35,6 +45,15 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     setLoading(false);
     toast.success('Logged in successfully');
+    return data;
+  };
+
+  const loginWithGoogle = async (idToken) => {
+    const data = await api.post('/auth/google', { token: idToken });
+    localStorage.setItem('token', data.token);
+    setUser(data.user);
+    setLoading(false);
+    toast.success('Logged in with Google successfully');
     return data;
   };
 
@@ -60,8 +79,33 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const completeOnboarding = async (currentPhase) => {
+    const data = await api.patch('/users/me/onboarding', { currentPhase });
+    if (data.user) {
+      setUser(data.user);
+    } else {
+      // Fallback: fetch user profile again
+      const meData = await api.get('/auth/me');
+      setUser(meData.user);
+    }
+    toast.success('Onboarding completed');
+    return data;
+  };
+
+  const acceptTerms = async () => {
+    const data = await api.post('/auth/accept-terms');
+    if (data.user) {
+      setUser(data.user);
+    } else {
+      const meData = await api.get('/auth/me');
+      setUser(meData.user);
+    }
+    toast.success('Terms and conditions accepted');
+    return data;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, register, logout, updateProfile, completeOnboarding, acceptTerms }}>
       {children}
     </AuthContext.Provider>
   );

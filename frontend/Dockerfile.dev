@@ -5,7 +5,11 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 COPY package.json package-lock.json* ./
+<<<<<<< HEAD
 RUN npm ci --legacy-peer-deps
+=======
+RUN npm install --legacy-peer-deps
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
 
 COPY . .
 
@@ -15,6 +19,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV WATCHPACK_POLLING=true
 ENV NODE_ENV=development
 
+<<<<<<< HEAD
+=======
+RUN mkdir -p /app/.next && chown -R node:node /app
+
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
 USER node
 
 CMD ["npm", "run", "dev"]

@@ -18,6 +18,7 @@ const questionSchema = new mongoose.Schema({
     required: true,
   },
   isAnonymous: { type: Boolean, default: false },
+  category: { type: String },
   tags: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Tag',
@@ -98,6 +99,11 @@ const questionSchema = new mongoose.Schema({
   },
 
   // Moderation
+  status: {
+    type: String,
+    enum: ['open', 'closed', 'deleted'],
+    default: 'open',
+  },
   isLocked: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
   isFlagged: { type: Boolean, default: false },
@@ -107,17 +113,43 @@ const questionSchema = new mongoose.Schema({
   closedReason: { type: String },
   closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
-  status: {
+  // Anomaly Detection
+  anomalyScore: { type: Number, default: 0 },
+  anomalySeverity: {
     type: String,
-    enum: ['open', 'closed', 'deleted'],
-    default: 'open',
+    enum: ['high', 'medium', 'low', 'none'],
+    default: 'none',
   },
+  alertSent: { type: Boolean, default: false },
+  anomalyResolvedAt: { type: Date, default: null },
+  anomalyResolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  escalated15MinSent: { type: Boolean, default: false },
+  escalated30MinSent: { type: Boolean, default: false },
 
   // Timestamps
   lastActivity: { type: Date },
+
+  // Moderation & Visibility Fields
+  visibility: {
+    type: String,
+    enum: ["public", "pending", "hidden", "archived"],
+    default: "pending"
+  },
+  reportCount: { type: Number, default: 0 },
+  reportedBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  triggeredRule: { type: String },
+  phase: {
+    type: String,
+    enum: ["onboarding", "week1", "week2", "week3", "final", "certificate"]
+  },
+  archivedAt: { type: Date },
 }, { timestamps: true });
 
 questionSchema.index({ title: 'text', body: 'text' });
+questionSchema.index({ visibility: 1, isDeleted: 1 });
 questionSchema.index({ author: 1 });
 questionSchema.index({ tags: 1 });
 questionSchema.index({ status: 1 });

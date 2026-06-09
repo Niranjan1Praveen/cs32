@@ -7,7 +7,7 @@ import { formatDate, truncate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import DownvoteReasonModal from './DownvoteReasonModal';
 
-export default function QuestionCard({ question }) {
+export default function QuestionCard({ question, absoluteDate = false }) {
   const { user } = useAuth();
   const [upvotes, setUpvotes] = useState(question.upvotes || 0);
   const [downvotes, setDownvotes] = useState(question.downvotes || 0);
@@ -173,7 +173,11 @@ export default function QuestionCard({ question }) {
               <Link href={`/users/${question.author?.username}`} className="flex items-center gap-1.5 hover:text-[var(--color-primary)] transition-colors">
                 {question.author?.avatar ? (
                   <img 
+<<<<<<< HEAD
                     src={question.author.avatar.startsWith('http') ? question.author.avatar : `${api.baseUrl.replace('/api', '')}${question.author.avatar}`} 
+=======
+                    src={(question.author.avatar.startsWith('http') || question.author.avatar.startsWith('data:')) ? question.author.avatar : `${api.baseUrl.replace('/api', '')}${question.author.avatar}`} 
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                     alt="" 
                     className="w-5 h-5 rounded-full object-cover" 
                   />
@@ -185,7 +189,11 @@ export default function QuestionCard({ question }) {
                 <span>{question.author?.displayName || question.author?.username}</span>
               </Link>
             )}
+<<<<<<< HEAD
             <span>asked {formatDate(question.createdAt)}</span>
+=======
+            <span>asked {formatDate(question.createdAt, absoluteDate)}</span>
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
             <span className="text-[var(--color-text-muted)]">{question.viewCount || 0} views</span>
           </div>
         </div>

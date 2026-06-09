@@ -99,7 +99,11 @@ export default function QuestionDetailPage() {
   }, [socket, id, recentlyPostedId]);
 
   const handleVote = async (targetType, targetId, voteType, reasonData = null) => {
-    if (!user) { toast.error('Please login to vote'); return; }
+    if (!user) {
+      toast.error('Please login to vote');
+      router.push('/auth?mode=login');
+      return;
+    }
     try {
       const payload = { targetType, targetId, voteType };
       if (voteType === 'downvote' && reasonData) {
@@ -118,6 +122,11 @@ export default function QuestionDetailPage() {
   };
 
   const openDownvoteModal = (targetType, targetId) => {
+    if (!user) {
+      toast.error('Please login to vote');
+      router.push('/auth?mode=login');
+      return;
+    }
     setShowDownvoteModal({ open: true, targetType, targetId });
   };
 
@@ -127,7 +136,11 @@ export default function QuestionDetailPage() {
   };
 
   const handleSave = async () => {
-    if (!user) { toast.error('Please login to save'); return; }
+    if (!user) {
+      toast.error('Please login to save');
+      router.push('/auth?mode=login');
+      return;
+    }
     try {
       if (saved) {
         await api.delete(`/users/me/saved/${id}`);
@@ -143,8 +156,43 @@ export default function QuestionDetailPage() {
     }
   };
 
+  const handleReportPost = async (targetId, postType = 'Question') => {
+    if (!user) {
+      toast.error('Please login to report content');
+      router.push('/auth?mode=login');
+      return;
+    }
+    const reason = prompt('Please specify a reason for reporting (e.g. spam, abuse, duplicate):');
+    if (!reason) return;
+    try {
+      await api.post(`/posts/${targetId}/report`, { reason });
+      toast.success('Report submitted successfully. Thank you for keeping the community safe!');
+      if (postType === 'Question') {
+        fetchQuestion();
+      } else {
+        fetchAnswers();
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to submit report');
+    }
+  };
+
+  const handleSelfEscalate = async () => {
+    try {
+      const res = await api.patch(`/questions/${id}/urgent`);
+      setQuestion(res.question);
+      toast.success('Your question has been escalated to urgent status!');
+    } catch (err) {
+      toast.error(err.message || 'Failed to escalate question');
+    }
+  };
+
   const handleMeToo = async () => {
-    if (!user) { toast.error('Please login to use this feature'); return; }
+    if (!user) {
+      toast.error('Please login to use this feature');
+      router.push('/auth?mode=login');
+      return;
+    }
     try {
       const data = await api.patch(`/questions/${id}/me-too`);
       setQuestion(prev => prev ? { ...prev, meTooCount: data.meTooCount, hasMeToo: data.hasMeToo } : prev);
@@ -155,7 +203,11 @@ export default function QuestionDetailPage() {
   };
 
   const handleSolvedMyDoubt = async (answerId) => {
-    if (!user) { toast.error('Please login to use this feature'); return; }
+    if (!user) {
+      toast.error('Please login to use this feature');
+      router.push('/auth?mode=login');
+      return;
+    }
     try {
       const data = await api.patch(`/answers/${answerId}/solved-my-doubt`);
       setSolvedDoubtAnswers(prev => ({
@@ -172,7 +224,11 @@ export default function QuestionDetailPage() {
 
   const handleSubmitAnswer = async (e) => {
     e.preventDefault();
-    if (!user) { toast.error('Please login to answer'); return; }
+    if (!user) {
+      toast.error('Please login to answer');
+      router.push('/auth?mode=login');
+      return;
+    }
     if (newAnswer.length < 10) { toast.error('Answer too short'); return; }
 
     setAnswering(true);
@@ -377,6 +433,7 @@ export default function QuestionDetailPage() {
           })
         }}
       />
+<<<<<<< HEAD
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Duplicate Notice */}
         {question.isDuplicate && question.duplicateOf && (
@@ -390,6 +447,40 @@ export default function QuestionDetailPage() {
             <Link href={`/questions/${question.duplicateOf._id || question.duplicateOf}`} className="text-primary-600 hover:text-primary-700 text-sm mt-1 inline-block">
               View the original question →
             </Link>
+=======
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Visibility Status Banners */}
+      {question.visibility === 'pending' && user && (user._id === question.author?._id || user.role === 'admin' || user.role === 'moderator') && (
+        <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400">
+            <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="font-semibold text-sm">Your question is pending moderation. It will be visible to everyone once approved by a moderator.</span>
+          </div>
+        </div>
+      )}
+
+      {question.visibility === 'hidden' && user && (user._id === question.author?._id || user.role === 'admin' || user.role === 'moderator') && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 text-red-800 dark:text-red-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <span className="font-semibold text-sm">This question has been hidden by moderators.</span>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Notice */}
+      {question.isDuplicate && question.duplicateOf && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2 text-yellow-800">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="font-semibold">This question has been marked as a duplicate</span>
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
           </div>
         )}
 
@@ -431,6 +522,47 @@ export default function QuestionDetailPage() {
           </div>
         )}
 
+      {/* Anomaly Detection Banners */}
+      {question.anomalySeverity === 'high' && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-lg shadow-sm animate-pulse">
+          <div className="flex items-center gap-2 text-red-800 dark:text-red-400">
+            <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="font-semibold text-sm">Your query has been flagged as urgent. Our team has been notified and will respond shortly.</span>
+          </div>
+        </div>
+      )}
+
+      {question.anomalySeverity === 'medium' && (
+        <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-semibold text-sm">Your query is in our review queue. You'll hear back soon.</span>
+          </div>
+        </div>
+      )}
+
+      {user && (question.author?._id === user._id || question.author === user._id) && 
+        (question.anomalySeverity === 'low' || question.anomalySeverity === 'none' || !question.anomalySeverity) && (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 rounded-lg flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-blue-800 dark:text-blue-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium">Is this issue blocking your progress? You can self-escalate it.</span>
+          </div>
+          <button
+            onClick={handleSelfEscalate}
+            className="btn-primary btn-sm px-4 py-1.5 text-xs font-semibold shrink-0"
+          >
+            This is urgent
+          </button>
+        </div>
+      )}
+
       {/* Question Header */}
       <div className="mb-6">
         <div className="flex items-start justify-between gap-4">
@@ -439,6 +571,11 @@ export default function QuestionDetailPage() {
             <button onClick={handleSave} className="btn-secondary btn-sm">
               {saved ? 'Saved' : 'Save'}
             </button>
+            {user?.id !== (question.author?._id || question.author) && (
+              <button onClick={() => handleReportPost(question._id, 'Question')} className="btn-secondary btn-sm text-red-600 border-red-300 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20">
+                Report
+              </button>
+            )}
             {(user?.role === 'admin' || user?.role === 'moderator') && (
               <button onClick={handleDelete} className="btn-danger btn-sm">Delete</button>
             )}
@@ -451,7 +588,11 @@ export default function QuestionDetailPage() {
             {question.isFAQ && (user?.role === 'admin' || user?.role === 'moderator') && (
               <button onClick={() => handleMarkOutdated()} className="btn-secondary btn-sm">Mark Outdated</button>
             )}
+<<<<<<< HEAD
             {user?.role === 'admin' || user?.role === 'moderator' && (
+=======
+            {(user?.role === 'admin' || user?.role === 'moderator') && (
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
               <button onClick={() => openAddToFAQModal(null)} className="btn-secondary btn-sm">Add to FAQ</button>
             )}
           </div>
@@ -471,7 +612,11 @@ export default function QuestionDetailPage() {
             <Link href={`/users/${question.author?.username}`} className="flex items-center gap-1.5 hover:text-primary-600 transition-colors">
               {question.author?.avatar ? (
                 <img 
+<<<<<<< HEAD
                   src={question.author.avatar.startsWith('http') ? question.author.avatar : `${api.baseUrl.replace('/api', '')}${question.author.avatar}`} 
+=======
+                  src={(question.author.avatar.startsWith('http') || question.author.avatar.startsWith('data:')) ? question.author.avatar : `${api.baseUrl.replace('/api', '')}${question.author.avatar}`} 
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                   alt="" 
                   className="w-5 h-5 rounded-full object-cover" 
                 />
@@ -573,12 +718,21 @@ export default function QuestionDetailPage() {
                     </div>
                     <div className="flex-1">
                       <MarkdownRenderer content={answer.body} />
+<<<<<<< HEAD
                       <div className="mt-4 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                           <Link href={`/users/${answer.author?.username}`} className="flex items-center gap-1.5 hover:text-primary-600 transition-colors">
                             {answer.author?.avatar ? (
                               <img 
                                 src={answer.author.avatar.startsWith('http') ? answer.author.avatar : `${api.baseUrl.replace('/api', '')}${answer.author.avatar}`} 
+=======
+                      <div className="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                          <Link href={`/users/${answer.author?.username}`} className="flex items-center gap-1.5 hover:text-primary-600 transition-colors">
+                            {answer.author?.avatar ? (
+                              <img 
+                                src={(answer.author.avatar.startsWith('http') || answer.author.avatar.startsWith('data:')) ? answer.author.avatar : `${api.baseUrl.replace('/api', '')}${answer.author.avatar}`} 
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                                 alt="" 
                                 className="w-5 h-5 rounded-full object-cover" 
                               />
@@ -591,7 +745,7 @@ export default function QuestionDetailPage() {
                           </Link>
                           <span>answered {formatDate(answer.createdAt)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {answer.isOfficial && <span className="badge-green">Official</span>}
                           {answer.isAccepted && <span className="badge-green">Accepted</span>}
                           {answer.solvedMyDoubtCount >= 5 && <span className="badge-blue">Helpful ({answer.solvedMyDoubtCount})</span>}
@@ -645,6 +799,14 @@ export default function QuestionDetailPage() {
                               Delete
                             </button>
                           )}
+<<<<<<< HEAD
+=======
+                          {user && user?.id !== answer.author?._id && (
+                            <button onClick={() => handleReportPost(answer._id, 'Answer')} className="btn-secondary btn-sm text-red-600 border-red-300 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20">
+                              Report
+                            </button>
+                          )}
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
                         </div>
                       </div>
                     </div>

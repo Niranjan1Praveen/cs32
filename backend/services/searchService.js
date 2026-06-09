@@ -211,13 +211,81 @@ const indexUser = async (user) => {
   }
 };
 
+const STOP_WORDS = new Set([
+  'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'arent', 'as', 'at', 
+  'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by', 'cant', 'cannot', 'could', 
+  'couldnt', 'did', 'didnt', 'do', 'does', 'doesnt', 'doing', 'dont', 'down', 'during', 'each', 'few', 'for', 'from', 
+  'further', 'had', 'hadnt', 'has', 'hasnt', 'have', 'havent', 'having', 'he', 'hed', 'hell', 'hes', 'her', 'here', 
+  'heres', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'hows', 'i', 'id', 'ill', 'im', 'ive', 'if', 'in', 
+  'into', 'is', 'isnt', 'it', 'its', 'itself', 'lets', 'me', 'more', 'most', 'mustnt', 'my', 'myself', 'no', 'nor', 
+  'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own', 
+  'same', 'shant', 'she', 'shed', 'shell', 'shes', 'should', 'shouldnt', 'so', 'some', 'such', 'than', 'that', 'thats', 
+  'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'theres', 'these', 'they', 'theyd', 'theyll', 
+  'theyre', 'theyve', 'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'wasnt', 'we', 
+  'wed', 'well', 'were', 'weve', 'werent', 'what', 'whats', 'when', 'whens', 'where', 'wheres', 'which', 'while', 
+  'who', 'whos', 'whom', 'why', 'whys', 'with', 'wont', 'would', 'wouldnt', 'you', 'youd', 'youll', 'youre', 'youve', 
+  'your', 'yours', 'yourself', 'yourselves'
+]);
+
+const cleanSearchQuery = (queryStr) => {
+  if (!queryStr) return '';
+  const words = queryStr.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(Boolean);
+  const filtered = words.filter(w => !STOP_WORDS.has(w));
+  return filtered.join(' ').trim() || queryStr;
+};
+const doesMatchExactly = (q, text) => {
+  if (!q || !text) return false;
+  const cleanStr = (s) => s.toLowerCase().replace(/[^\w]/g, '').trim();
+  return cleanStr(q) === cleanStr(text);
+};
+
+const calculateMongoScore = (query, doc, terms) => {
+  const matchTarget = doc.question || doc.title || doc.displayName || doc.username || '';
+  if (doesMatchExactly(query, matchTarget)) return 1.0;
+
+  const cleanQ = query ? query.toLowerCase().trim() : '';
+  const cleanTarget = matchTarget.toLowerCase();
+
+  if (cleanQ && cleanTarget.includes(cleanQ)) return 0.9;
+
+  if (doc.faqTitle && cleanQ && doc.faqTitle.toLowerCase().includes(cleanQ)) {
+    return 0.85;
+  }
+
+  if (terms && terms.length > 0) {
+    const termInTarget = terms.some(t => cleanTarget.includes(t.toLowerCase()));
+    if (termInTarget) return 0.8;
+  }
+
+  const desc = doc.body || doc.description || doc.answer || doc.bio || '';
+  if (cleanQ && desc.toLowerCase().includes(cleanQ)) return 0.75;
+
+  return 0.7;
+};
+
 const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
+  try {
+    const Question = require('../models/Question');
+    const FAQ = require('../models/FAQ');
+    const User = require('../models/User');
+    const Tag = require('../models/Tag');
+
+  const cleanedQuery = cleanSearchQuery(query);
+  const terms = cleanedQuery.split(/\s+/).filter(Boolean);
+
+  let esResults = [];
+  let esTotal = 0;
+
+  // 1. Run Elasticsearch Search
   try {
     const es = getES();
     const must = [];
     const filter = [];
 
+<<<<<<< HEAD
     // Strict tab routing: each tab targets only its own index/indices
+=======
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     let indices;
     if (type === 'questions') {
       indices = INDEX_QUESTIONS;
@@ -226,18 +294,32 @@ const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
     } else if (type === 'users') {
       indices = INDEX_USERS;
     } else {
+<<<<<<< HEAD
       // "All" tab: search across all indices
+=======
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
       indices = [INDEX_QUESTIONS, INDEX_FAQS, INDEX_FAQ_ITEMS, INDEX_USERS];
     }
 
-    if (query) {
+    if (cleanedQuery) {
       if (type === 'users') {
         must.push({
           multi_match: {
-            query,
+            query: cleanedQuery,
             fields: ['username^3', 'displayName^2', 'bio'],
             type: 'best_fields',
-            fuzziness: 'AUTO',
+            fuzziness: 1,
+            minimum_should_match: '2<70%',
+          },
+        });
+      } else if (type === 'questions') {
+        must.push({
+          multi_match: {
+            query: cleanedQuery,
+            fields: ['title^3', 'body^2', 'tags', 'authorName'],
+            type: 'best_fields',
+            fuzziness: 1,
+            minimum_should_match: '2<70%',
           },
         });
       } else if (type === 'questions') {
@@ -252,20 +334,30 @@ const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
       } else if (type === 'faqs') {
         must.push({
           multi_match: {
+<<<<<<< HEAD
             query,
+=======
+            query: cleanedQuery,
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
             fields: ['title^3', 'description^2', 'question^4', 'answer', 'tags'],
             type: 'best_fields',
-            fuzziness: 'AUTO',
+            fuzziness: 1,
+            minimum_should_match: '2<70%',
           },
         });
       } else {
         // "All" tab: fuzzy search across all field names from every index
         must.push({
           multi_match: {
+<<<<<<< HEAD
             query,
+=======
+            query: cleanedQuery,
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
             fields: ['title^3', 'body^2', 'question^4', 'answer', 'description', 'tags', 'username^2', 'displayName', 'bio', 'authorName'],
             type: 'best_fields',
-            fuzziness: 'AUTO',
+            fuzziness: 1,
+            minimum_should_match: '2<70%',
           },
         });
       }
@@ -275,9 +367,13 @@ const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
       filter.push({ terms: { tags } });
     }
 
+<<<<<<< HEAD
     // Per-tab visibility filters (only restrict what must be restricted)
     if (type === 'faqs') {
       // FAQ tab: only show published FAQ items
+=======
+    if (type === 'faqs') {
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
       filter.push({
         bool: {
           should: [
@@ -288,8 +384,11 @@ const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
         },
       });
     } else if (!type || type === '') {
+<<<<<<< HEAD
       // "All" tab: show all questions (regardless of isFAQ), all FAQs, all users,
       // but only show published FAQ items
+=======
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
       filter.push({
         bool: {
           should: [
@@ -306,8 +405,8 @@ const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
     // they already target a single index
 
     const body = {
-      from: (page - 1) * limit,
-      size: limit,
+      from: 0,
+      size: 100,
       sort: type === 'users'
         ? [{ _score: 'desc' }]
         : [{ _score: 'desc' }, { createdAt: { order: 'desc' } }],
@@ -323,12 +422,16 @@ const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
 
     const result = await es.search({ index: indices, body });
 
+<<<<<<< HEAD
     // Map ES index names to frontend type labels
+=======
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     const indexToType = {
       [INDEX_QUESTIONS]: 'question',
       [INDEX_FAQS]: 'faq',
       [INDEX_FAQ_ITEMS]: 'faq',
       [INDEX_USERS]: 'user',
+<<<<<<< HEAD
     };
 
     let results = result.hits.hits.map(h => ({
@@ -347,7 +450,224 @@ const searchAll = async ({ query, tags, type, page = 1, limit = 20 }) => {
       total: result.hits.total.value,
       page,
       limit,
+=======
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     };
+
+    const maxScore = result.hits.hits.length > 0 ? Math.max(...result.hits.hits.map(h => h._score || 0)) : 1.0;
+    esResults = result.hits.hits.map(h => {
+      const matchTarget = h._source.question || h._source.title || h._source.displayName || h._source.username || '';
+      const exact = doesMatchExactly(query, matchTarget);
+      
+      let normScore = exact ? 1.0 : (maxScore > 0 ? (h._score / maxScore) * 0.95 : 0.95);
+      if (normScore > 1.0) normScore = 1.0;
+      if (normScore < 0.1) normScore = 0.1;
+
+      return {
+        ...h._source,
+        id: h._id,
+        _type: indexToType[h._index] || 'unknown',
+        score: normScore,
+      };
+    });
+    esTotal = result.hits.total.value;
+  } catch (err) {
+    console.error('ES Search error, falling back to DB:', err.message);
+  }
+
+  // 2. Run Database Fallback / Hybrid Search
+  const mongoResults = [];
+  try {
+    const promises = [];
+    const filterConditions = {};
+
+    let tagIds = [];
+    if (tags && tags.length > 0) {
+      const matchingTags = await Tag.find({ name: { $in: tags.map(t => t.toLowerCase()) } }).lean();
+      tagIds = matchingTags.map(t => t._id);
+    }
+
+    // A. Questions
+    if (!type || type === 'questions') {
+      const qFilter = { isDeleted: false };
+      if (tagIds.length > 0) qFilter.tags = { $in: tagIds };
+      if (terms.length > 0) {
+        qFilter.$and = terms.map(term => ({
+          $or: [
+            { title: { $regex: term, $options: 'i' } },
+            { body: { $regex: term, $options: 'i' } }
+          ]
+        }));
+      }
+      promises.push(
+        Question.find(qFilter)
+          .populate('author', 'username displayName')
+          .limit(50)
+          .lean()
+          .then(qs => qs.map(q => {
+            const doc = {
+              id: q._id.toString(),
+              title: q.title,
+              body: q.body,
+              tags: q.tags || [],
+              authorName: q.author ? (q.author.displayName || q.author.username) : 'anonymous',
+              createdAt: q.createdAt,
+              _type: 'question',
+            };
+            return {
+              ...doc,
+              score: calculateMongoScore(query, doc, terms),
+            };
+          }))
+      );
+    }
+
+    // B. FAQs & FAQ Items
+    if (!type || type === 'faqs') {
+      const fFilter = { isPublished: true };
+      if (tags && tags.length > 0) fFilter.tags = { $in: tags.map(t => t.toLowerCase()) };
+      if (terms.length > 0) {
+        fFilter.$and = terms.map(term => ({
+          $or: [
+            { title: { $regex: term, $options: 'i' } },
+            { description: { $regex: term, $options: 'i' } },
+            { 'items.question': { $regex: term, $options: 'i' } },
+            { 'items.answer': { $regex: term, $options: 'i' } }
+          ]
+        }));
+      }
+      promises.push(
+        FAQ.find(fFilter)
+          .limit(50)
+          .lean()
+          .then(faqs => {
+            const items = [];
+            for (const f of faqs) {
+              const pageMatches = terms.length === 0 || terms.every(term => 
+                f.title.toLowerCase().includes(term) || 
+                (f.description && f.description.toLowerCase().includes(term))
+              );
+              if (pageMatches) {
+                const doc = {
+                  id: f._id.toString(),
+                  slug: f.slug,
+                  title: f.title,
+                  description: f.description,
+                  category: f.category,
+                  tags: f.tags,
+                  createdAt: f.createdAt,
+                  _type: 'faq',
+                };
+                items.push({
+                  ...doc,
+                  score: calculateMongoScore(query, doc, terms),
+                });
+              }
+              for (const item of f.items || []) {
+                if (!item.isPublished) continue;
+                const itemMatches = terms.length === 0 || terms.every(term => 
+                  item.question.toLowerCase().includes(term) || 
+                  item.answer.toLowerCase().includes(term)
+                );
+                if (itemMatches) {
+                  const doc = {
+                    id: `${f._id.toString()}_${item._id.toString()}`,
+                    faqId: f._id.toString(),
+                    slug: f.slug,
+                    faqTitle: f.title,
+                    question: item.question,
+                    answer: item.answer,
+                    tags: item.tags,
+                    createdAt: item.createdAt,
+                    _type: 'faq',
+                  };
+                  items.push({
+                    ...doc,
+                    score: calculateMongoScore(query, doc, terms),
+                  });
+                }
+              }
+            }
+            return items;
+          })
+      );
+    }
+
+    // C. Users
+    if (!type || type === 'users') {
+      const uFilter = {};
+      if (terms.length > 0) {
+        uFilter.$and = terms.map(term => ({
+          $or: [
+            { username: { $regex: term, $options: 'i' } },
+            { displayName: { $regex: term, $options: 'i' } },
+            { bio: { $regex: term, $options: 'i' } }
+          ]
+        }));
+      }
+      promises.push(
+        User.find(uFilter)
+          .limit(50)
+          .lean()
+          .then(us => us.map(u => {
+            const doc = {
+              id: u._id.toString(),
+              username: u.username,
+              displayName: u.displayName || u.username,
+              bio: u.bio || '',
+              reputation: u.reputation || 0,
+              createdAt: u.createdAt,
+              _type: 'user',
+            };
+            return {
+              ...doc,
+              score: calculateMongoScore(query, doc, terms),
+            };
+          }))
+      );
+    }
+
+    const dbResults = await Promise.all(promises).then(r => r.flat());
+    mongoResults.push(...dbResults);
+  } catch (err) {
+    console.error('DB fallback query error:', err.message);
+  }
+
+  // 3. Merge, Deduplicate, Sort and Paginate
+  const mergedMap = new Map();
+  // Add DB results first
+  for (const r of mongoResults) {
+    mergedMap.set(r.id, r);
+  }
+  // Add ES results (so they take precedence and overwrite score/data with ES scores)
+  for (const r of esResults) {
+    mergedMap.set(r.id, r);
+  }
+
+  let mergedResults = Array.from(mergedMap.values());
+
+  // Sort
+  if (type === 'users') {
+    mergedResults.sort((a, b) => (a.displayName || a.username || '').localeCompare(b.displayName || b.username || ''));
+  } else {
+    mergedResults.sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  }
+
+  const total = mergedResults.length;
+  const startIndex = (page - 1) * limit;
+  const paginatedResults = mergedResults.slice(startIndex, startIndex + limit);
+
+  return {
+    results: paginatedResults,
+    total,
+    page,
+    limit,
+  };
   } catch (err) {
     console.error('Search error:', err.message);
     return { results: [], total: 0, page, limit };
@@ -384,6 +704,7 @@ const syncToElasticsearch = async () => {
     const FAQ = require('../models/FAQ');
     const User = require('../models/User');
 
+<<<<<<< HEAD
     // Check if ES indices are empty while MongoDB has data
     const [qCount, fCount, uCount] = await Promise.all([
       es.count({ index: INDEX_QUESTIONS }).then(r => r.count).catch(() => 0),
@@ -429,6 +750,43 @@ const syncToElasticsearch = async () => {
     if (qCount > 0 && fCount > 0 && uCount > 0) {
       console.log('Elasticsearch already in sync');
     }
+=======
+    console.log('Clearing and recreating Elasticsearch indices to ensure full sync...');
+    for (const index of [INDEX_QUESTIONS, INDEX_FAQS, INDEX_FAQ_ITEMS, INDEX_USERS]) {
+      try {
+        const exists = await es.indices.exists({ index });
+        if (exists) {
+          await es.indices.delete({ index });
+        }
+      } catch (err) {
+        console.error(`Error deleting index ${index}:`, err.message);
+      }
+    }
+
+    await initIndices();
+
+    const questions = await Question.find({ isDeleted: false })
+      .populate('author', 'username displayName avatar reputation')
+      .populate('tags', 'name color');
+    console.log(`Syncing ${questions.length} questions to Elasticsearch...`);
+    for (const q of questions) {
+      await indexQuestion(q);
+    }
+
+    const faqs = await FAQ.find();
+    console.log(`Syncing ${faqs.length} FAQs to Elasticsearch...`);
+    for (const faq of faqs) {
+      await indexFAQ(faq);
+    }
+
+    const users = await User.find();
+    console.log(`Syncing ${users.length} users to Elasticsearch...`);
+    for (const u of users) {
+      await indexUser(u);
+    }
+
+    console.log('Elasticsearch index synchronization complete!');
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
   } catch (err) {
     console.error('ES sync error:', err.message);
   }
@@ -445,7 +803,11 @@ const seedDatabase = async () => {
 
     const metadataPath = path.join(__dirname, '..', '..', 'metadata.json');
     const faqsPath = path.join(__dirname, '..', '..', 'faqs-complete.json');
+<<<<<<< HEAD
     const integrityPath = [path.join(__dirname, '..', '..', '.integrity'), path.join(__dirname, '..', '..', '..', '.integrity')].find(p => fs.existsSync(p));
+=======
+    const integrityPath = [path.join(__dirname, '..', '..', '.integrity'), path.join(__dirname, '..', '..', '..', '.integrity')].find(p => fs.existsSync(p) && fs.statSync(p).isFile());
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
 
     if (fs.existsSync(integrityPath)) {
       const integrityData = fs.readFileSync(integrityPath, 'utf-8');
@@ -469,6 +831,26 @@ const seedDatabase = async () => {
     const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
     const faqItems = JSON.parse(fs.readFileSync(faqsPath, 'utf-8'));
 
+<<<<<<< HEAD
+=======
+    const Category = require('../models/Category');
+    const existingCategories = await Category.countDocuments();
+    if (existingCategories === 0) {
+      console.log('Seeding categories...');
+      const categoriesToSeed = [];
+      let orderIndex = 0;
+      for (const [catId, catName] of Object.entries(metadata.categories)) {
+        categoriesToSeed.push({
+          name: catName,
+          icon: '📌',
+          order: orderIndex++,
+        });
+      }
+      await Category.insertMany(categoriesToSeed);
+      console.log('Categories seeded successfully');
+    }
+
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     const existingFaqs = await FAQ.countDocuments();
     if (existingFaqs === 0) {
       console.log('Seeding database...');
@@ -511,6 +893,7 @@ const seedDatabase = async () => {
 
     console.log('Seeding additional users...');
     const seedUsers = [
+<<<<<<< HEAD
       { username: 'admin', email: 'admin@quorafaq.com', password: 'admin123', displayName: 'Administrator', bio: 'Site administrator with full access', role: 'admin', reputation: 10000, badges: ['Founder', 'Administrator'], isBanned: false },
       { username: 'moderator', email: 'moderator@quorafaq.com', password: 'mod12345', displayName: 'Senior Moderator', bio: 'Community moderator', role: 'moderator', reputation: 5000, badges: ['Moderator', 'Helper'], isBanned: false },
       { username: 'student', email: 'student@quorafaq.com', password: 'student123', displayName: 'Regular Member', bio: 'Active community member', role: 'user', reputation: 250, badges: ['Contributor'], isBanned: false },
@@ -518,6 +901,30 @@ const seedDatabase = async () => {
       { username: 'bob', email: 'bob@quorafaq.com', password: 'bob123', displayName: 'Bob Smith', bio: 'Engineering student', role: 'user', reputation: 150, badges: ['Curious Learner'], isBanned: false },
     ];
 
+=======
+      { username: 'admin', email: 'admin@quorafaq.com', password: 'admin123', displayName: 'Administrator', bio: 'Site administrator with full access', role: 'admin', reputation: 10000, badges: ['Founder', 'Administrator'], isBanned: false }
+    ];
+
+    if (process.env.NODE_ENV !== 'production') {
+      seedUsers.push(
+        { username: 'moderator', email: 'moderator@quorafaq.com', password: 'mod12345', displayName: 'Senior Moderator', bio: 'Community moderator', role: 'moderator', reputation: 5000, badges: ['Moderator', 'Helper'], isBanned: false },
+        { username: 'student', email: 'student@quorafaq.com', password: 'student123', displayName: 'Regular Member', bio: 'Active community member', role: 'user', reputation: 250, badges: ['Contributor'], isBanned: false },
+        { username: 'alice', email: 'alice@quorafaq.com', password: 'alice123', displayName: 'Alice Johnson', bio: 'Computer Science student', role: 'user', reputation: 100, badges: ['Newcomer'], isBanned: false },
+        { username: 'bob', email: 'bob@quorafaq.com', password: 'bob123', displayName: 'Bob Smith', bio: 'Engineering student', role: 'user', reputation: 150, badges: ['Curious Learner'], isBanned: false }
+      );
+    } else {
+      // In production, delete mock users if they exist to keep DB clean
+      const mockUsernames = ['moderator', 'student', 'alice', 'bob'];
+      const mockUsers = await User.find({ username: { $in: mockUsernames } });
+      for (const mu of mockUsers) {
+        // Delete their questions & answers to thoroughly clean up
+        await Question.deleteMany({ author: mu._id });
+        await User.deleteOne({ _id: mu._id });
+      }
+      console.log('Cleaned up mock users in production mode.');
+    }
+
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     for (const u of seedUsers) {
       const existingByEmail = await User.findOne({ email: u.email });
       const existingByUsername = await User.findOne({ username: u.username });
@@ -530,7 +937,11 @@ const seedDatabase = async () => {
         await User.create(u);
       }
     }
+<<<<<<< HEAD
     console.log('Users seeded successfully');
+=======
+    console.log('Users seeded/verified successfully');
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
   } catch (err) {
     console.error('Seed error:', err.message);
   }

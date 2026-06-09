@@ -6,6 +6,21 @@ import { formatDate, truncate } from '@/lib/utils';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import api from '@/lib/api';
 
+const getSearchResultLink = (result) => {
+  const typeLabel = result._type || (result.body !== undefined ? 'question' : result.description !== undefined ? 'faq' : 'user');
+  if (typeLabel === 'question') {
+    return `/questions/${result.id}`;
+  } else if (typeLabel === 'faq') {
+    if (result.id && result.id.includes('_')) {
+      const [faqId, itemId] = result.id.split('_');
+      return `/faqs/${result.slug || faqId}#${itemId}`;
+    }
+    return `/faqs/${result.slug || result.faqId || result.id}`;
+  } else {
+    return `/users/${result.username}`;
+  }
+};
+
 export default function SearchModal({ isOpen, onClose }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -70,8 +85,12 @@ export default function SearchModal({ isOpen, onClose }) {
       e.preventDefault();
       if (selectedIndex >= 0 && results[selectedIndex]) {
         const result = results[selectedIndex];
+<<<<<<< HEAD
         const typeLabel = result._type || (result.body !== undefined ? 'question' : result.description !== undefined ? 'faq' : 'user');
         const link = typeLabel === 'question' ? `/questions/${result.id}` : typeLabel === 'faq' ? `/faqs/${result.faqId || result.slug || result.id}` : `/users/${result.username}`;
+=======
+        const link = getSearchResultLink(result);
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
         router.push(link);
         onClose();
       } else if (query.trim()) {
@@ -101,8 +120,12 @@ export default function SearchModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const handleResultClick = (result) => {
+<<<<<<< HEAD
     const typeLabel = result._type || (result.body !== undefined ? 'question' : result.description !== undefined ? 'faq' : 'user');
     const link = typeLabel === 'question' ? `/questions/${result.id}` : typeLabel === 'faq' ? `/faqs/${result.faqId || result.slug || result.id}` : `/users/${result.username}`;
+=======
+    const link = getSearchResultLink(result);
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
     router.push(link);
     onClose();
   };
@@ -166,7 +189,11 @@ export default function SearchModal({ isOpen, onClose }) {
                   const typeLabel = result._type || (result.body !== undefined ? 'question' : result.description !== undefined ? 'faq' : 'user');
                   const title = result.title || result.question || result.faqTitle || result.displayName || result.username || 'Untitled';
                   const desc = result.body || result.description || result.answer || result.bio || '';
+<<<<<<< HEAD
                   const link = typeLabel === 'question' ? `/questions/${result.id}` : typeLabel === 'faq' ? `/faqs/${result.faqId || result.slug || result.id}` : `/users/${result.username}`;
+=======
+                  const link = getSearchResultLink(result);
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
 
                   return (
                     <li key={result.id}>

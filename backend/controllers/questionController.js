@@ -10,13 +10,17 @@ const { canDeleteQuestion, hasPermission, PERMISSIONS } = require('../utils/perm
 const Notification = require('../models/Notification');
 const { flagContent, clearFlag } = require('../services/moderationService');
 const FAQ = require('../models/FAQ');
+<<<<<<< HEAD
+=======
+const User = require('../models/User');
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
 
 exports.createQuestion = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { title, body, tags, anonymous } = req.body;
+    const { title, body, tags, anonymous, phase } = req.body;
     let tagIds = [];
     let tagNames = [];
 
@@ -39,6 +43,54 @@ exports.createQuestion = async (req, res, next) => {
 
     const existingQuestion = await findExistingQuestion(title, tagNames);
 
+    // Map user phase to question phase
+    const mapUserPhase = (userPhase) => {
+      switch (userPhase) {
+        case 'pre': return 'onboarding';
+        case 'phase1_coursework': return 'week1';
+        case 'phase1_completed': return 'week2';
+        case 'phase2_project': return 'week3';
+        case 'completed': return 'final';
+        default: return 'onboarding';
+      }
+    };
+
+    let visibility = req.body.visibility;
+    if (!visibility) {
+      if (req.user.trustLevel === 'trusted' || req.user.trustLevel === 'regular') {
+        visibility = 'public';
+      } else if (req.user.premodApproved) {
+        visibility = 'public';
+      } else {
+        const qCount = await Question.countDocuments({ author: req.user._id });
+        visibility = qCount < 3 ? 'pending' : 'public';
+      }
+    }
+
+    // Call FastAPI AI microservice for zero-shot validation and noise classification
+    let isAiFlaggedNoise = false;
+    let aiFlagReason = '';
+    try {
+      const axios = require('axios');
+      const config = require('../config');
+      console.log(`[AI Validate] Calling FastAPI validate at: ${config.fastApiUrl}/api/v1/validate`);
+      const response = await axios.post(`${config.fastApiUrl}/api/v1/validate`, {
+        text: title
+      }, { timeout: 3000 });
+
+      if (response.data && response.data.valid === false) {
+        isAiFlaggedNoise = true;
+        aiFlagReason = response.data.reason || 'AI flagged this as unreadable noise.';
+        console.log(`[AI Validate] Question flagged as noise. Reason: ${aiFlagReason}`);
+      }
+    } catch (err) {
+      console.error('[AI Validate] FastAPI validation call failed or timed out:', err.message);
+    }
+
+    if (isAiFlaggedNoise) {
+      return res.status(400).json({ error: `Your question was flagged as spam or noise and is not allowed. Reason: ${aiFlagReason}` });
+    }
+
     const questionData = {
       title,
       body,
@@ -47,6 +99,11 @@ exports.createQuestion = async (req, res, next) => {
       tagNames,
       lastActivity: new Date(),
       isAnonymous: !!anonymous,
+      visibility,
+      triggeredRule: isAiFlaggedNoise ? 'AI Noise Filter' : (req.body.triggeredRule || undefined),
+      phase: phase || mapUserPhase(req.user.currentPhase) || 'onboarding',
+      anomalySeverity: isAiFlaggedNoise ? 'high' : 'none',
+      anomalyScore: isAiFlaggedNoise ? 0.95 : 0
     };
 
     if (existingQuestion) {
@@ -57,30 +114,64 @@ exports.createQuestion = async (req, res, next) => {
 
     const question = await Question.create(questionData);
 
+    const AuditLog = require('../models/AuditLog');
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'create_question',
+      targetId: question._id,
+      targetType: 'Question',
+      reason: `Created question: "${title}"`
+    });
+
+    const { processAnomalyClassification } = require('../services/anomalyService');
+    await processAnomalyClassification(question._id);
+
     if (existingQuestion) {
       await Question.findByIdAndUpdate(existingQuestion.question._id, {
         $addToSet: { relatedQuestions: question._id },
       });
     }
 
-    await Question.findByIdAndUpdate(req.user._id, { $inc: { questionCount: 1 } });
+    await User.findByIdAndUpdate(req.user._id, { $inc: { questionCount: 1 } });
 
     const populated = await Question.findById(question._id)
       .populate('author', 'username displayName avatar reputation')
       .populate('tags', 'name color')
       .populate('relatedQuestions', 'title answerCount');
 
-    await indexQuestion(populated);
+    // Only index and notify if it is immediately public
+    if (visibility === 'public') {
+      await indexQuestion(populated);
 
-    res.status(201).json({ question: populated, alreadyAsked: existingQuestion ? {
-      isAlreadyAsked: true,
-      scopeMatch: existingQuestion.scopeMatch,
-      matchedQuestion: {
-        _id: existingQuestion.question._id,
-        title: existingQuestion.question.title,
-        answerCount: existingQuestion.question.answerCount,
-      },
-    } : null });
+      // Send new question approved notification
+      try {
+        const { sendNewQuestionApprovedNotification } = require('../services/emailService');
+        const authorName = populated.author ? (populated.author.displayName || populated.author.username) : 'Anonymous';
+        await sendNewQuestionApprovedNotification(populated, authorName);
+      } catch (emailErr) {
+        console.error('Email notification error:', emailErr.message);
+      }
+    } else if (visibility === 'pending') {
+      try {
+        const { emitToAdmin } = require('../socket');
+        emitToAdmin('moderation:updated', { action: 'new_pending_question', questionId: question._id });
+      } catch (err) {
+        console.error('Socket notification error for pending question:', err.message);
+      }
+    }
+
+    res.status(201).json({
+      question: populated,
+      alreadyAsked: existingQuestion ? {
+        isAlreadyAsked: true,
+        scopeMatch: existingQuestion.scopeMatch,
+        matchedQuestion: {
+          _id: existingQuestion.question._id,
+          title: existingQuestion.question.title,
+          answerCount: existingQuestion.question.answerCount,
+        },
+      } : null
+    });
   } catch (err) {
     next(err);
   }
@@ -146,8 +237,9 @@ async function findExistingQuestion(title, tagNames) {
         similarMatch.title.toLowerCase().includes(w)
       );
       const hasMatchingTags = similarMatch.tagNames.some(t => tagNames.includes(t));
-      const scopeMatch = hasSimilarTitle && hasMatchingTags ? 'similar' : 'tag';
-      return { question: similarMatch, scopeMatch };
+      if (hasSimilarTitle && hasMatchingTags) {
+        return { question: similarMatch, scopeMatch: 'similar' };
+      }
     }
   }
 
@@ -157,12 +249,30 @@ async function findExistingQuestion(title, tagNames) {
 exports.getQuestions = async (req, res, next) => {
   try {
     const { page, limit, skip } = paginate(req.query.page, req.query.limit);
-    const filter = { status: 'open', isDeleted: false };
+    const filter = { isDeleted: { $ne: true } };
 
     if (req.query.tag) filter.tagNames = req.query.tag.toLowerCase();
     if (req.query.author) filter.author = req.query.author;
     if (req.query.search) {
       filter.$text = { $search: req.query.search };
+    }
+
+    const isModOrAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
+    const currentUserId = req.user ? req.user._id.toString() : null;
+
+    const visibilityConditions = [];
+    if (isModOrAdmin) {
+      // No visibility restrictions for admin/mod
+    } else if (currentUserId) {
+      visibilityConditions.push({ visibility: { $in: ['public', 'archived'] } });
+      visibilityConditions.push({ author: req.user._id });
+    } else {
+      visibilityConditions.push({ visibility: { $in: ['public', 'archived'] } });
+    }
+
+    if (visibilityConditions.length > 0) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ $or: visibilityConditions });
     }
 
     const sort = {};
@@ -176,8 +286,6 @@ exports.getQuestions = async (req, res, next) => {
       default: sort.createdAt = -1;
     }
 
-    const isModOrAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
-
     const [questions, total] = await Promise.all([
       Question.find(filter)
         .sort(sort)
@@ -189,8 +297,9 @@ exports.getQuestions = async (req, res, next) => {
     ]);
 
     const withOwner = questions.map(q => {
-      const isAuthor = req.user && q.author && q.author._id && q.author._id.toString() === req.user._id.toString();
-      const anonymized = q.isAnonymous && !isModOrAdmin ? {
+      const authorId = q.author && q.author._id ? q.author._id.toString() : null;
+      const isAuthor = currentUserId && authorId && currentUserId === authorId;
+      const anonymized = q.isAnonymous && !isAuthor && !isModOrAdmin ? {
         ...q.toObject(),
         author: {
           _id: 'anonymous',
@@ -202,7 +311,7 @@ exports.getQuestions = async (req, res, next) => {
       } : q.toObject();
       return {
         ...anonymized,
-        hasMeToo: req.user ? q.meTooUsers && q.meTooUsers.some(u => u.toString() === req.user._id.toString()) : false,
+        hasMeToo: currentUserId ? q.meTooUsers && q.meTooUsers.some(u => u.toString() === currentUserId) : false,
         isOwner: isAuthor,
       };
     });
@@ -228,6 +337,15 @@ exports.getQuestion = async (req, res, next) => {
 
     if (!question) throw new AppError('Question not found', 404);
 
+    const isModOrAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
+    const isAuthor = req.user && question.author && question.author._id.toString() === req.user._id.toString();
+
+    if (question.visibility !== 'public' && question.visibility !== 'archived') {
+      if (!isModOrAdmin && !isAuthor) {
+        throw new AppError('Question not found or pending moderation', 404);
+      }
+    }
+
     if (req.user) {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       const existingView = await QuestionView.findOne({
@@ -244,9 +362,6 @@ exports.getQuestion = async (req, res, next) => {
         await Question.findByIdAndUpdate(question._id, { $inc: { viewCount: 1 } });
       }
     }
-
-    const isModOrAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
-    const isAuthor = req.user && question.author && question.author._id.toString() === req.user._id.toString();
 
     if (question.isAnonymous && !isModOrAdmin && !isAuthor) {
       question.author = {
@@ -281,6 +396,9 @@ exports.updateQuestion = async (req, res, next) => {
       throw new AppError('Not authorized', 403);
     }
 
+    const oldTitle = question.title;
+    const oldBody = question.body;
+
     const { title, body, tags } = req.body;
     if (title) question.title = title;
     if (body) question.body = body;
@@ -300,6 +418,21 @@ exports.updateQuestion = async (req, res, next) => {
     }
 
     await question.save();
+
+    const AuditLog = require('../models/AuditLog');
+    let changes = [];
+    if (title && title !== oldTitle) changes.push(`title: "${oldTitle}" -> "${title}"`);
+    if (body && body !== oldBody) changes.push(`body: "${oldBody}" -> "${body}"`);
+    const changeReason = changes.length > 0 ? `Updated question: ${changes.join(', ')}` : 'Updated question tags';
+
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'update_question',
+      targetId: question._id,
+      targetType: 'Question',
+      reason: changeReason
+    });
+
     const updated = await Question.findById(question._id)
       .populate('author', 'username displayName avatar reputation')
       .populate('tags', 'name color');
@@ -321,6 +454,16 @@ exports.deleteQuestion = async (req, res, next) => {
     question.status = 'deleted';
     question.isDeleted = true;
     await question.save();
+
+    const AuditLog = require('../models/AuditLog');
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'delete_question',
+      targetId: question._id,
+      targetType: 'Question',
+      reason: `Deleted question: "${question.title}"`
+    });
+
     await deleteQuestionIndex(question._id);
     res.json({ message: 'Question deleted' });
   } catch (err) {
@@ -613,6 +756,30 @@ exports.escalateQuestion = async (req, res, next) => {
   }
 };
 
+exports.selfEscalateAnomaly = async (req, res, next) => {
+  try {
+    const question = await Question.findById(req.params.id);
+    if (!question) throw new AppError('Question not found', 404);
+    
+    if (question.author.toString() !== req.user._id.toString()) {
+      throw new AppError('Only the author can self-escalate their question', 403);
+    }
+
+    question.anomalySeverity = 'high';
+    question.anomalyScore = Math.max(85, question.anomalyScore || 0);
+    question.alertSent = true;
+    await question.save();
+
+    const { alertAdminsAndModerators } = require('../services/anomalyService');
+    const subject = `[SELF-ESCALATED HIGH ALERT] User query marked urgent by author`;
+    await alertAdminsAndModerators(question, subject);
+
+    res.json({ message: 'Question successfully escalated to urgent status', question });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.resolveEscalation = async (req, res, next) => {
   try {
     const { resolutionNote } = req.body;
@@ -889,3 +1056,67 @@ exports.clearFlagQuestion = async (req, res, next) => {
     next(err);
   }
 };
+<<<<<<< HEAD
+=======
+
+exports.validateQuestionText = async (req, res, next) => {
+  try {
+    const { title, body } = req.body;
+
+    // Heuristic 1: Repeated Character Pattern /(.)\1{6,}/
+    const repeatedCharPattern = /(.)\1{6,}/;
+    if ((title && repeatedCharPattern.test(title)) || (body && repeatedCharPattern.test(body))) {
+      return res.json({ valid: false, reason: "Message contains repeated character patterns (spam/noise)." });
+    }
+
+    // Heuristic 2: Gibberish detection
+    const isGibberish = (text) => {
+      if (!text || text.length < 5) return false;
+      const lower = text.toLowerCase();
+      const letters = lower.replace(/[^a-z]/g, '');
+      if (letters.length < 5) return false;
+      // Check vowel ratio — real words need at least 10% vowels
+      const vowels = (letters.match(/[aeiou]/g) || []).length;
+      const vowelRatio = vowels / letters.length;
+      if (vowelRatio < 0.10) return true; // nearly no vowels = gibberish
+      // Check consecutive consonant clusters (6+ in a row)
+      if (/[bcdfghjklmnpqrstvwxyz]{6,}/.test(lower)) return true;
+      // Check unique char ratio — real sentences have repetition
+      const uniqueChars = new Set(letters).size;
+      const uniqueRatio = uniqueChars / letters.length;
+      if (letters.length > 12 && uniqueRatio > 0.85) return true;
+      return false;
+    };
+
+    if ((title && isGibberish(title)) || (body && isGibberish(body))) {
+      return res.json({ valid: false, reason: "Your input appears to be gibberish or random characters. Please write a clear, meaningful question." });
+    }
+
+    // Call FastAPI AI microservice for zero-shot validation (if title is provided)
+    if (title && title.trim().length >= 8) {
+      try {
+        const axios = require('axios');
+        const config = require('../config');
+        const response = await axios.post(`${config.fastApiUrl}/api/v1/validate`, {
+          text: title
+        }, { timeout: 1500 }); // Fast timeout for typing responsiveness
+
+        if (response.data && response.data.valid === false) {
+          return res.json({
+            valid: false,
+            reason: response.data.reason || 'AI flagged this as unreadable noise.'
+          });
+        }
+      } catch (err) {
+        // Log but don't fail, fallback to valid since local checks passed
+        console.error('[AI Validate typing] FastAPI validation failed or timed out:', err.message);
+      }
+    }
+
+    return res.json({ valid: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+>>>>>>> ee33865eca586c7144d3e3235fd508333d554c11

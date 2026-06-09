@@ -5,7 +5,9 @@ import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = typeof window !== 'undefined'
+  ? ''
+  : (process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000');
 
 export function SocketProvider({ children }) {
   const { user } = useAuth();
@@ -23,15 +25,26 @@ export function SocketProvider({ children }) {
     const token = localStorage.getItem('token');
     const newSocket = io(SOCKET_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      path: '/socket.io',
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
     });
 
+    let errorCount = 0;
     newSocket.on('connect', () => {
-      console.log('Socket connected');
+      console.log('Socket connected:', newSocket.id);
+      errorCount = 0;
     });
 
     newSocket.on('connect_error', (err) => {
-      console.error('Socket error:', err.message);
+      console.error('Socket connection error:', err.message);
+      errorCount++;
+      if (errorCount >= 3) {
+        console.warn('[Socket] Socket server not available on this host. Disabling socket client to prevent console spam.');
+        newSocket.disconnect();
+      }
     });
 
     setSocket(newSocket);
