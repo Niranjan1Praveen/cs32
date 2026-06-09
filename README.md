@@ -1,6 +1,6 @@
 # PrashnaSārathi (प्रश्नसारथि) — Community Q&A and FAQ Platform
 
-<!-- ![Platform Banner](screenshots/qa/ga-detailed.png) -->
+![Platform Banner](screenshots/logo/logo-banner.png)
 
 A community-driven Q&A and FAQ platform designed to help students ask doubts without fear, get answers fast, and feel their problems are genuinely solved.
 
@@ -29,19 +29,19 @@ A community-driven Q&A and FAQ platform designed to help students ask doubts wit
 ### 📝 Q&A Core
 
 #### Ask Questions
-![GA Detailed View](screenshots/qa/ga-detailed.png)
+![QA Detailed View](screenshots/qa/qa-detailed.png)
 - Create questions with title, rich text body, and tags
 - Anonymous posting option for sensitive doubts
 - Duplicate detection before posting
 
 #### Similar Questions Detection
-![GA Similar Questions](screenshots/qa/ga-similar.png)
+![QA Similar Questions](screenshots/qa/ga-similar.png)
 - Prevents duplicate questions before posting
 - Shows similar existing questions
 - Reduces clutter and encourages consolidation
 
 #### Content Quality Filtering
-![GA Gibberish Detection](screenshots/qa/ga-gibberish.png)
+![QA Gibberish Detection](screenshots/qa/qa-gibberish.png)
 - AI-powered spam and noise classification
 - Automatically filters low-quality content
 - Maintains high-quality discussions
