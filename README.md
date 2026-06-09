@@ -51,7 +51,7 @@ A community-driven Q&A and FAQ platform designed to help students ask doubts wit
 - Duplicate detection before posting
 
 #### Similar Questions Detection
-![QA Similar Questions](screenshots/qa/ga-similar.png)
+![QA Similar Questions](screenshots/qa/qa-similar.png)
 - Prevents duplicate questions before posting
 - Shows similar existing questions
 - Reduces clutter and encourages consolidation
