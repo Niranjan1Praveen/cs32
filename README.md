@@ -1,6 +1,24 @@
 # PrashnaSārathi (प्रश्नसारथि) — Community Q&A and FAQ Platform
 
+![Platform Banner](screenshots/ui/dashboard-overview.png)
+
 A community-driven Q&A and FAQ platform designed to help students ask doubts without fear, get answers fast, and feel their problems are genuinely solved.
+
+**Live Demo:** [https://prashnasarathi.vercel.app/](https://prashnasarathi.vercel.app/)
+
+---
+
+## 📸 Screenshots Showcase
+
+### Dashboard & Question Feed
+![Dashboard Overview](screenshots/ui/dashboard-overview.png)
+*Main question feed with dark mode and keyboard navigation support*
+
+### Mobile Responsive Design
+![Mobile View](screenshots/ui/mobile-view.png)
+*Fully responsive design that works seamlessly on all devices*
+
+---
 
 ## Tech Stack
 
@@ -8,251 +26,112 @@ A community-driven Q&A and FAQ platform designed to help students ask doubts wit
 | --------- | ----------------------------------------------- |
 | Frontend  | Next.js 14 (App Router), React 18, Tailwind CSS |
 | Backend   | Node.js, Express 4, MongoDB (Mongoose), Redis   |
-| Search    | Elasticsearch                                   | | Realtime  | Socket.IO                                       |
+| Search    | Elasticsearch                                   |
+| Realtime  | Socket.IO                                       |
 | Events    | Kafka (optional)                                |
 | Infra     | Podman / Docker, Nginx                          |
 
-## Running on Other Systems
-
-To set up and run this project on a new developer environment or a separate host system, follow these steps:
-
-### 1. Prerequisites
-Ensure you have the following installed on the target system:
-* **Docker / Podman & Docker Desktop** (with WSL2 enabled if on Windows)
-* **Node.js 20.x** (for local host development without containers)
-
 ---
-
-### 2. Environment Configuration (Crucial Step)
-Since the `secrets.env` file containing sensitive private keys and credentials is ignored by version control, **you must create it manually** on the target system:
-
-1. Copy `.env.example` to `secrets.env` in the root directory:
-   ```bash
-   cp .env.example secrets.env
-   ```
-2. Open `secrets.env` and populate the following values:
-   * **Gmail SMTP Credentials**:
-     ```env
-     GMAIL_USER=your-email@gmail.com
-     GMAIL_APP_PASSWORD=sixteencharacterpassword
-     ```
-     *(Note: The Gmail App Password must be 16 characters with no spaces. Requires 2FA enabled on your Google account).*
-   * **Firebase Admin Credentials**:
-     Provide the JSON string of your Firebase service account in `FIREBASE_SERVICE_ACCOUNT` on a single line.
-
----
-
-### 3. Option A: Run via Docker Compose (Recommended)
-This starts all required auxiliary services (MongoDB, Redis, Elasticsearch, FastAPI Spam Service, Node Backend, Next.js Frontend) in unified containers:
-
-1. Run the cross-platform setup script or docker-compose command directly:
-   ```bash
-   # Option 1: Cross-platform script
-   ./setup-docker.sh
-   
-   # Option 2: Direct docker-compose
-   docker-compose up --build -d
-   ```
-2. Access the site at: http://localhost:3000
-
----
-
-<<<<<<< HEAD
-This reads `faqs-complete.json` and `metadata.json` to populate MongoDB with 13 FAQ categories and 126 FAQ items, plus test users:
-- **Admin:** `aduorafamin@qq.com` / `admin123`
-- **Moderator:** `mod@quorafaq.com` / `mod123`
-- **Students:** `alice@test.com`, `bob@test.com`, `charlie@test.com` (password: `test123`)
-=======
-### 4. Option B: Running via Docker Directly (Without Compose)
-If you want to run the application using standalone Docker commands without orchestrating through docker-compose:
->>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
-
-1. **Start required database & cache containers**:
-   ```bash
-   # Start MongoDB
-   docker run -d --name mongodb -p 27017:27017 mongo:6.0
-   
-   # Start Redis
-   docker run -d --name redis -p 6379:6379 redis:7.0-alpine
-   
-   # Start Elasticsearch
-   docker run -d --name elasticsearch -p 9200:9200 -e "discovery.type=single-node" -e "xpack.security.enabled=false" elasticsearch:8.11.1
-   ```
-
-2. **Build and run the Backend**:
-   ```bash
-   # Build the backend image
-   docker build -t prashnasarathi-backend ./backend
-   
-   # Run the backend container using your secrets.env file
-   docker run -d --name backend -p 5000:5000 --env-file secrets.env prashnasarathi-backend
-   ```
-
-3. **Build and run the Frontend**:
-   ```bash
-   # Build the frontend image
-   docker build -t prashnasarathi-frontend ./frontend
-   
-   # Run the frontend container
-   docker run -d --name frontend -p 3000:3000 prashnasarathi-frontend
-   ```
-
----
-
-<<<<<<< HEAD
-### Running with Docker Compose (Recommended for Windows/Mac)
-
-This is the easiest way to run the platform on any OS without installing Node.js, MongoDB, Redis, or Elasticsearch locally.
-
-```bash
-# Option 1: Use the setup script (recommended for Windows/Mac)
-./setup-docker.sh
-
-# Option 2: Direct docker-compose
-docker-compose up --build -d
-```
-
-This spins up the complete development environment (MongoDB, Redis, Elasticsearch, Backend, Frontend). Access the application directly at http://localhost:3000.
-
-**For Windows (Docker Desktop WSL2):**
-- Ensure WSL2 is installed and Docker Desktop is configured to use it
-- Allocate at least 4GB RAM in Docker Desktop settings
-- Run from WSL2 terminal or Git Bash
-
-**For macOS (Docker Desktop):**
-- Allocate at least 4GB RAM in Docker Desktop settings
-- Apple Silicon (M1/M2/M3): Docker Desktop handles ARM64 natively
-- Intel: Standard amd64 builds work automatically
-=======
-### 5. Option C: Local Host Setup (No Containers)
-If you prefer running services directly on the host machine:
-
-1. Start local instances of **MongoDB** (`port 27017`), **Redis** (`port 6379`), and **Elasticsearch** (`port 9200`).
-2. Install packages:
-   ```bash
-   cd backend && npm install
-   cd ../frontend && npm install
-   ```
-3. Seed the FAQ Database:
-   ```bash
-   cd backend && npm run seed
-   ```
-4. Start development servers:
-   * **Backend**: `cd backend && npm run dev` (starts on port 5000)
-   * **Frontend**: `cd frontend && npm run dev` (starts on port 3000)
-
->>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
-
-## Project Structure
-
-```
-faq-site/
-├── backend/              # Express API server (port 5000)
-│   ├── config/           # DB, Redis, ES, Kafka connections
-│   ├── controllers/      # Route handlers (auth, questions, answers, votes, etc.)
-│   ├── middleware/        # JWT auth, error handling, rate limiting, uploads
-│   ├── models/           # Mongoose schemas (User, Question, Answer, FAQ, Vote, etc.)
-│   ├── routes/           # Express route definitions (11 route files)
-│   ├── seeds/            # Database seed script + test users
-│   ├── services/         # ES search, recommendations, analytics, moderation
-│   ├── socket/           # Socket.IO real-time setup
-│   └── utils/            # Helpers, validators, permissions
-<<<<<<< HEAD
-│   ├── socket/           # Socket.IO real-time setup
-│   └── utils/            # Helpers, validators, permissions
-=======
->>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
-├── frontend/             # Next.js 14 app (port 3000)
-│   ├── app/              # App Router pages (faqs, questions, admin, auth, etc.)
-│   ├── components/       # Shared React components
-│   ├── context/          # Auth, Socket, Theme, Keyboard providers
-│   ├── hooks/            # Custom hooks (list keyboard navigation)
-│   ├── lib/              # API client & utilities
-│   ├── services/         # Frontend services (admin analytics, etc.)
-│   └── styles/           # Global CSS with Tailwind
-<<<<<<< HEAD
-=======
-├── FastAPI_python_model/ # FastAPI AI microservice (spam & noise classification)
-│   ├── main.py           # FastAPI server entry point
-│   ├── Dockerfile        # Container setup for Python dependencies
-│   └── requirements.txt  # Python packages list
->>>>>>> ee33865eca586c7144d3e3235fd508333d554c11
-├── nginx/                # Nginx reverse proxy config
-├── podman/               # Podman/Docker deployment files
-├── kafka/                # Optional Kafka docker-compose
-├── docker-compose.yml    # Multi-service container orchestration
-├── .dockerignore         # Docker build context exclusions
-├── setup-docker.sh       # Cross-platform Docker setup script
-├── faqs-complete.json    # 126 FAQ items (seed data)
-├── metadata.json         # Category metadata
-├── vercel.json           # Frontend Vercel hosting config
-└── todo.md               # Tracking document for fixes and features
-```
 
 ## Key Features
 
-### Q&A
-- **Ask questions** with title, body, tags, and anonymous option
-- **Answer with confidence** — students pick 🤔 "I think so" / 👍 "Pretty sure" / 💯 "I know this"
-- **Voting** — upvote/downvote with optional reason feedback
-- **Accept answer** — question author or moderator marks the best answer
-- **"Me Too" button** — students signal the same doubt; bumps question priority
-- **"Solved My Doubt" button** — distinct from upvote, tracks genuine resolution
-- **Duplicate detection** — find similar questions before posting
-- **Question escalation** — unanswered questions auto-escalate after 24h
-- **Mark as FAQ / Master FAQ** — moderators can promote questions to official FAQs
+### 📝 Q&A Core
 
-### FAQ System
-- **Categorized FAQ pages** with "On this page" sidebar navigation
-- **Item-level Yes/No feedback** (helpful / not helpful)
-- **Official badges** and tags
-- **Save/unsave FAQ pages** with notes and custom tags
+#### Ask Questions
+![Ask Question Form](screenshots/qa/ask-question-form.png)
+- Create questions with title, rich text body, and tags
+- Anonymous posting option for sensitive doubts
+- Duplicate detection before posting
 
-### Search & Discovery
-- **Full-text search** across questions, FAQs, and users (Elasticsearch)
-- **SearchModal** — open with `Ctrl+K` or `/`
-- **Trending searches** (Redis-cached)
-- **Search suggestions** — top 10 trending queries
-- **Tag browsing** and filtering with sort options
-- **Recommendations** — personalized tag-based question suggestions
-- **Similar & related questions** sidebar
+#### Answer with Confidence
+![Answer Confidence Levels](screenshots/qa/answer-confidence-levels.png)
+Students can indicate their confidence level when answering:
+- 🤔 "I think so" - Partial confidence
+- 👍 "Pretty sure" - Moderate confidence  
+- 💯 "I know this" - High confidence
 
-### User System
-- **Registration / Login / Logout** with JWT
-- **User profiles** — avatar, bio, reputation, badges, stats
-- **Saved questions & FAQs** with notes and custom tags
-- **Notification system** — new answers, accepted answers, upvotes, me-too, etc.
-- **Role system** — user, moderator, admin
-- **Ban/unban users** with reason
-- **Dark mode** — respects system preference, persists to localStorage
-- **Student onboarding** — 4-step guided walkthrough on first visit
+#### Voting & Feedback System
+![Voting Buttons](screenshots/qa/voting-buttons.png)
+- Upvote/downvote with optional reason feedback
+- Helps surface quality content
+- Provides constructive feedback to answer authors
 
-### Admin / Moderation
-- **Admin dashboard** with stats (users, questions, answers, DAU)
-- **User management** — role changes, ban/unban
-- **Flagged content** view and moderation
-- **Delete/edit** questions and answers
-- **Verify / Mark outdated** FAQ questions
-- **Cache clearing** — flush Redis cache
-- **User analytics** — registration over 30 days
-- **FAQ analytics** — top 10 most helpful items
+#### Accept Answer
+![Accepted Answer](screenshots/qa/accepted-answer.png)
+- Question authors or moderators can mark the best answer
+- Visual celebration with confetti effect
+- Helps future students find solutions quickly
 
-### UI/UX
-- **Responsive mobile layout** with Tailwind CSS
-- **Dark mode toggle** — automatic system preference + manual override
-- **Keyboard shortcuts** — `j`/`k` navigation, `/` search, `Esc` close
-- **Rich text editor** (TipTap)
-- **Markdown rendering** (GFM with syntax highlighting)
-- **Confetti celebration** on answer accepted
-- **View count tracking**
-- **SEO structured data** (JSON-LD)
-- **"On this page"** anchor navigation for FAQ pages
+#### "Me Too" Button
+![Me Too Button](screenshots/qa/me-too-button.png)
+- Students signal they have the same doubt
+- Bumps question priority in the algorithm
+- Encourages community participation
 
-### Real-time
-- **Socket.IO** — new answers, me-too counts, solved counts update instantly
-- **Live notifications** — pushed without page refresh
+#### "Solved My Doubt" Button
+![Solved Doubt Button](screenshots/qa/solved-doubt-button.png)
+- Distinct from upvote - tracks genuine problem resolution
+- Provides better metrics for answer quality
+- Helps identify truly helpful responses
 
-## Keyboard Shortcuts
+#### Duplicate Detection
+![Similar Questions](screenshots/qa/similar-questions.png)
+- Prevents duplicate questions before posting
+- Shows similar existing questions
+- Reduces clutter and encourages consolidation
+
+#### Question Escalation
+![Escalated Badge](screenshots/qa/escalated-badge.png)
+- Unanswered questions auto-escalate after 24 hours
+- Draws moderator attention to unresolved doubts
+- Ensures no question goes unanswered
+
+---
+
+### 📚 FAQ System
+
+#### Categorized FAQ Pages
+![FAQ Categories](screenshots/faq/faq-categories.png)
+- Organized by subject categories
+- Easy browsing and discovery
+- Version tracking for updates
+
+#### On-page Navigation
+![FAQ Sidebar Navigation](screenshots/faq/faq-sidebar-nav.png)
+- "On this page" anchor sidebar for quick jumping
+- Auto-highlights current section
+- Improves long-form FAQ usability
+
+#### Helpfulness Feedback
+![FAQ Feedback Buttons](screenshots/faq/faq-feedback-buttons.png)
+- Item-level Yes/No feedback tracking
+- Helps identify outdated or unclear content
+- Drives content improvement
+
+#### Official Badges & Verification
+![Official Badge](screenshots/faq/official-badge.png)
+- Verified official answers stand out
+- Master FAQ program for canonical answers
+- Trust markers for quality content
+
+#### Save FAQ Pages
+![Save FAQ Modal](screenshots/faq/save-faq-modal.png)
+- Save for later reference
+- Add personal notes
+- Organize with custom tags
+
+---
+
+### 🔍 Search & Discovery
+
+#### Powerful Search Modal
+![Search Modal](screenshots/search/search-modal.png)
+- Full-text search across questions, FAQs, and users
+- Press `Ctrl+K` or `/` to open from anywhere
+- Elasticsearch-powered for speed and relevance
+
+#### Keyboard Shortcuts
+![Keyboard Shortcuts](screenshots/search/keyboard-shortcuts-hint.png)
 
 | Shortcut | Action |
 |----------|--------|
@@ -262,80 +141,178 @@ faq-site/
 | `Enter` | View/open selected item |
 | `Esc` | Close modal or clear selection |
 
-Works on Questions/FAQs list pages and the search modal.
+#### Trending & Suggestions
+![Trending Searches](screenshots/search/trending-searches.png)
+- Trending searches powered by Redis caching
+- Search suggestions with top 10 popular queries
+- Real-time autocomplete
 
-## API Overview
+#### Tag Browsing
+![Tags Page](screenshots/search/tags-page.png)
+- Browse questions by topic tags
+- Filter and sort options
+- Related questions sidebar
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET  /api/health` | Health check |
-| `POST /api/auth/register` | Register new user |
-| `POST /api/auth/login` | Login |
-| `GET  /api/auth/me` | Get current user (auth) |
-| `PUT  /api/auth/profile` | Update profile (auth) |
-| `GET  /api/questions` | List questions (paginated, filterable) |
-| `POST /api/questions` | Create a question (auth) |
-| `GET  /api/questions/similar` | Find similar questions |
-| `GET  /api/questions/escalated` | Get escalated questions (mod+) |
-| `GET  /api/questions/master-faqs` | Get master FAQs |
-| `GET  /api/questions/:id` | Get single question |
-| `PUT  /api/questions/:id` | Update question (auth, owner/mod+) |
-| `DELETE /api/questions/:id` | Soft-delete (auth, owner/mod+) |
-| `PATCH /api/questions/:id/duplicate` | Mark as duplicate (mod+) |
-| `PATCH /api/questions/:id/me-too` | Toggle "me too" (auth) |
-| `PATCH /api/questions/:id/verify` | Verify as FAQ (mod+) |
-| `PATCH /api/questions/:id/outdated` | Mark as outdated (mod+) |
-| `PATCH /api/questions/:id/escalate` | Escalate question (auth) |
-| `PATCH /api/questions/:id/merge` | Merge into master FAQ (mod+) |
-| `GET  /api/answers/question/:questionId` | List answers |
-| `POST /api/answers/question/:questionId` | Create answer (auth) |
-| `PUT  /api/answers/:id` | Update answer (auth, owner) |
-| `DELETE /api/answers/:id` | Soft-delete (auth, owner/mod+) |
-| `POST /api/answers/:id/accept` | Accept answer (auth, author/mod) |
-| `PATCH /api/answers/:id/solved-my-doubt` | Toggle "solved my doubt" (auth) |
-| `GET  /api/faqs` | List FAQ pages (paginated) |
-| `GET  /api/faqs/:slug` | Get FAQ page by slug |
-| `POST /api/faqs` | Create FAQ page (mod+) |
-| `PUT  /api/faqs/:id` | Update FAQ page (mod+) |
-| `DELETE /api/faqs/:id` | Delete FAQ page (mod+) |
-| `POST /api/faqs/:id/items` | Add FAQ item (mod+) |
-| `POST /api/faqs/:id/items/:itemId/feedback` | Mark helpful/unhelpful |
-| `POST /api/votes` | Cast/change vote (auth) |
-| `GET  /api/votes/:targetType/:targetId` | Get user's vote (auth) |
-| `GET  /api/votes/feedback/:targetType/:targetId` | Get downvote feedback (auth) |
-| `GET  /api/search` | Search across all content |
-| `GET  /api/search/suggestions` | Top 10 search suggestions |
-| `GET  /api/tags` | List tags |
-| `GET  /api/tags/:name` | Get tag by name |
-| `GET  /api/users/:username` | Get public profile |
-| `GET  /api/users/:username/questions` | User's questions |
-| `GET  /api/users/:username/answers` | User's answers |
-| `GET  /api/users/me/saved` | Saved questions (auth) |
-| `POST /api/users/me/saved` | Save question (auth) |
-| `PATCH /api/users/me/saved/:questionId` | Update saved question (auth) |
-| `DELETE /api/users/me/saved/:questionId` | Unsave question (auth) |
-| `GET  /api/users/me/saved/faqs` | Saved FAQs (auth) |
-| `POST /api/users/me/saved/faqs` | Save FAQ (auth) |
-| `PATCH /api/users/me/saved/faqs/:faqId` | Update saved FAQ (auth) |
-| `DELETE /api/users/me/saved/faqs/:faqId` | Unsave FAQ (auth) |
-| `GET  /api/notifications` | List notifications (auth) |
-| `GET  /api/notifications/unread-count` | Unread count (auth) |
-| `PUT  /api/notifications/read` | Mark as read (auth) |
-| `GET  /api/recommendations/recommended` | Personalized recommendations |
-| `GET  /api/recommendations/trending` | Trending questions |
-| `GET  /api/admin/dashboard` | Dashboard stats (admin) |
-| `GET  /api/admin/users` | List users (admin) |
-| `PUT  /api/admin/users/:id/role` | Update user role (admin) |
-| `POST /api/admin/users/:id/ban` | Ban user (admin) |
-| `POST /api/admin/users/:id/unban` | Unban user (admin) |
-| `GET  /api/admin/flagged` | Flagged content (admin) |
-| `POST /api/admin/cache/clear` | Flush Redis cache (admin) |
+#### Personalized Recommendations
+![Related Questions](screenshots/search/related-questions-sidebar.png)
+- AI-powered question recommendations
+- Based on user tags and activity
+- Similar questions sidebar
 
-## Seeding Data
+---
 
-The seed data comes from two files at the project root:
+### 👤 User System
 
-- **`faqs-complete.json`** — 126 FAQ items with `faqId`, `question`, `answer`, `categoryId`
-- **`metadata.json`** — category metadata (13 categories, version info)
+#### Authentication
+![Login Modal](screenshots/user/login-modal.png)
+- JWT-based secure authentication
+- Registration with email verification
+- Session management
 
-Run `cd backend && npm run seed` to populate the database.
+#### User Profile
+![User Profile Page](screenshots/user/user-profile-page.png)
+- Custom avatars and bio
+- Reputation system
+- Achievement badges
+- Activity statistics (questions, answers, votes)
+
+#### Saved Content
+![Saved Questions Page](screenshots/user/saved-questions-page.png)
+- Save questions and FAQs for later
+- Add personal notes
+- Organize with custom tags
+- Easy reference and review
+
+#### Real-time Notifications
+![Notification Dropdown](screenshots/user/notification-dropdown.png)
+- New answers to your questions
+- Answers accepted notifications
+- Upvotes and "Me Too" alerts
+- Live updates via Socket.IO
+
+#### Dark Mode
+![Dark Mode Comparison](screenshots/user/dark-mode-comparison.png)
+- Automatic system preference detection
+- Manual override with toggle
+- Persists to localStorage
+- Full dark theme support across all pages
+
+#### Student Onboarding
+![Onboarding Walkthrough](screenshots/user/onboarding-walkthrough.png)
+- 4-step guided tour for new users
+- Platform feature introduction
+- Encourages engagement from day one
+
+#### Role System
+- **User** - Standard access
+- **Moderator** - Content moderation privileges
+- **Admin** - Full platform control
+
+---
+
+### 🛡️ Admin & Moderation
+
+#### Admin Dashboard
+![Admin Dashboard](screenshots/admin/admin-dashboard.png)
+- Real-time platform statistics
+- User activity metrics (DAU, questions, answers)
+- 30-day registration analytics
+- Quick access to moderation tools
+
+#### User Management
+![User Management Table](screenshots/admin/user-management-table.png)
+- View all registered users
+- Change user roles (User/Moderator/Admin)
+- Ban/unban users with reason tracking
+- Search and filter functionality
+
+#### Flagged Content Queue
+![Flagged Content Queue](screenshots/admin/flagged-content-queue.png)
+- Review reported questions and answers
+- Approve or remove content
+- Track moderation history
+
+#### FAQ Management
+![FAQ Verification Panel](screenshots/admin/faq-verification-panel.png)
+- Verify FAQ accuracy
+- Mark outdated content
+- Promote questions to Master FAQ status
+
+#### Cache Management
+![Admin Cache Control](screenshots/admin/admin-cache-control.png)
+- One-click Redis cache clearing
+- Improves performance after updates
+- Admin-only access
+
+#### Analytics Dashboard
+![User Analytics Chart](screenshots/admin/user-analytics-chart.png)
+- Registration trends over 30 days
+- Top 10 most helpful FAQ items
+- Question resolution rates
+
+---
+
+### 🎨 UI/UX Highlights
+
+#### Rich Text Editor
+![Rich Text Editor](screenshots/ui/rich-text-editor.png)
+- TipTap-based WYSIWYG editor
+- Formatting toolbar
+- Image upload support
+
+#### Markdown Rendering
+![Markdown Preview](screenshots/ui/markdown-preview.png)
+- GitHub Flavored Markdown (GFM)
+- Syntax highlighting for code blocks
+- Consistent content presentation
+
+#### Confetti Celebration
+![Confetti Effect](screenshots/ui/confetti-effect.png)
+- Celebratory animation when answers are accepted
+- Positive reinforcement for contributors
+- Delightful user experience
+
+#### View Counter
+![View Count Badge](screenshots/ui/view-count-badge.png)
+- Track question popularity
+- Sort by most viewed
+- Engagement metrics
+
+#### SEO Optimized
+- Structured data with JSON-LD
+- Meta tags for social sharing
+- Sitemap generation
+
+---
+
+### ⚡ Real-time Features
+
+#### Live Notifications
+![Live Notification Toast](screenshots/realtime/live-notification-toast.png)
+- Toast notifications for new activity
+- No page refresh required
+- Powered by Socket.IO
+
+#### Real-time Updates
+![Live Counter Update](screenshots/realtime/live-counter-update.png)
+- Me-too counts update instantly
+- Answer counts refresh in real-time
+- Solved metrics update without page reload
+
+---
+
+## Running on Other Systems
+
+To set up and run this project on a new developer environment or a separate host system, follow these steps:
+
+### 1. Prerequisites
+Ensure you have the following installed on the target system:
+- **Docker / Podman & Docker Desktop** (with WSL2 enabled if on Windows)
+- **Node.js 20.x** (for local host development without containers)
+
+### 2. Environment Configuration (Crucial Step)
+Since the `secrets.env` file containing sensitive private keys and credentials is ignored by version control, **you must create it manually** on the target system:
+
+1. Copy `.env.example` to `secrets.env` in the root directory:
+   ```bash
+   cp .env.example secrets.env

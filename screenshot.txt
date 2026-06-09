@@ -1,0 +1,35 @@
+parent-root/
+├── screenshots/
+│   ├── qa/
+│   │   ├── ask-question-form.png
+│   │   ├── answer-confidence-levels.png
+│   │   ├── voting-buttons.png
+│   │   └── ...
+│   ├── faq/
+│   │   ├── faq-categories.png
+│   │   ├── faq-sidebar-nav.png
+│   │   └── ...
+│   ├── search/
+│   │   ├── search-modal.png
+│   │   ├── trending-searches.png
+│   │   └── ...
+│   ├── user/
+│   │   ├── login-modal.png
+│   │   ├── user-profile-page.png
+│   │   ├── dark-mode-comparison.png
+│   │   └── ...
+│   ├── admin/
+│   │   ├── admin-dashboard.png
+│   │   ├── user-management-table.png
+│   │   └── ...
+│   ├── ui/
+│   │   ├── mobile-view.png
+│   │   ├── rich-text-editor.png
+│   │   └── ...
+│   └── realtime/
+│       ├── live-notification-toast.png
+│       └── live-counter-update.png
+└── docs/
+    ├── architecture.md
+    ├── deployment.md
+    └── troubleshooting.md
