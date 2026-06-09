@@ -16,14 +16,19 @@ A community-driven Q&A and FAQ platform designed to help students ask doubts wit
 
 | Name | Email |
 |------|-------|
-| Arjun Sharma | arjun.sharma@prashnasarathi.com |
-| Priya Patel | priya.patel@prashnasarathi.com |
-| Rahul Verma | rahul.verma@prashnasarathi.com |
-| Sneha Reddy | sneha.reddy@prashnasarathi.com |
-| Vikram Singh | vikram.singh@prashnasarathi.com |
-| Ananya Nair | ananya.nair@prashnasarathi.com |
-| Manoj Kumar | manoj.kumar@prashnasarathi.com |
-| Neha Gupta | neha.gupta@prashnasarathi.com |
+| Tsp Amiitesh (Team Lead) | tspamiitesh@gmail.com |
+| Medisetty Shanmukh | medisettyshanmukh@gmail.com |
+| Dhruv Malu | dhruvmalu6@gmail.com |
+| Divyanshi Mishra | divyanshimishra480@gmail.com |
+| Niranjan Praveen | niranjanbpraveen@gmail.com |
+| Rohit Wadettiwar | rohitwadettiwar.ds24@sbjit.edu.in |
+| Shawshank Redemp | shawshank.redemp5@gmail.com |
+| Isha Dudhatra | ishadudhatra@gmail.com |
+| Kinnera Swetha | Kinneraswetha04@gmail.com |
+| Yash Raj Patel | shyamjiniranjan913@gmail.com |
+| Abhignya Gottumukkala | 323103310081@gvpce.ac.in |
+| Ishan Vandita | ishanvandita16@gmail.com |
+| Priteenanda Das | cse.23bcsh44@silicon.ac.in |
 
 ---
 
@@ -41,6 +46,18 @@ A community-driven Q&A and FAQ platform designed to help students ask doubts wit
 ---
 
 ## Key Features
+
+### Home Dashboard
+
+<div align="center">
+  <img src="screenshots/homepage/main-view.png" alt="PrashnaSārathi Home Page" width="100%">
+</div>
+
+The main dashboard serves as the central hub with:
+- Global search bar for instant knowledge discovery
+- Personalized FAQ recommendations
+- Category-based content filtering
+- Quick access to all platform features
 
 ### Q&A Core
 
