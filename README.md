@@ -1,6 +1,8 @@
 # PrashnaSārathi (प्रश्नसारथि) — Community Q&A and FAQ Platform
 
-![Platform Banner](screenshots/logo/logo-banner.png)
+<div align="center">
+  <img src="screenshots/logo/logo-banner.png" alt="Platform Banner" width="70%">
+</div>
 
 A community-driven Q&A and FAQ platform designed to help students ask doubts without fear, get answers fast, and feel their problems are genuinely solved.
 
