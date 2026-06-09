@@ -1,14 +1,14 @@
 # PrashnaSārathi (प्रश्नसारथि) — Community Q&A and FAQ Platform
 
+<div align="center">
+  <img src="screenshots/logo/logo-banner.png" alt="Platform Banner" width="30%">
+</div>
+
 A community-driven Q&A and FAQ platform designed to help students ask doubts without fear, get answers fast, and feel their problems are genuinely solved.
 
 **Live Demo:** [https://prashnasarathi.vercel.app/](https://prashnasarathi.vercel.app/)
 
 ---
-
-<div align="center">
-  <img src="screenshots/logo/logo-banner.png" alt="Platform Banner" width="40%">
-</div>
 
 ## Tech Stack
 
