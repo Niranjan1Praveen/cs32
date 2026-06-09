@@ -4,9 +4,26 @@
   <img src="screenshots/logo/logo-banner.png" alt="Platform Banner" width="30%">
 </div>
 
+<br>
+
 A community-driven Q&A and FAQ platform designed to help students ask doubts without fear, get answers fast, and feel their problems are genuinely solved.
 
 **Live Demo:** [https://prashnasarathi.vercel.app/](https://prashnasarathi.vercel.app/)
+
+---
+
+## Team Members
+
+| Name | Email |
+|------|-------|
+| Arjun Sharma | arjun.sharma@prashnasarathi.com |
+| Priya Patel | priya.patel@prashnasarathi.com |
+| Rahul Verma | rahul.verma@prashnasarathi.com |
+| Sneha Reddy | sneha.reddy@prashnasarathi.com |
+| Vikram Singh | vikram.singh@prashnasarathi.com |
+| Ananya Nair | ananya.nair@prashnasarathi.com |
+| Manoj Kumar | manoj.kumar@prashnasarathi.com |
+| Neha Gupta | neha.gupta@prashnasarathi.com |
 
 ---
 
@@ -25,7 +42,7 @@ A community-driven Q&A and FAQ platform designed to help students ask doubts wit
 
 ## Key Features
 
-### 📝 Q&A Core
+### Q&A Core
 
 #### Ask Questions
 ![QA Detailed View](screenshots/qa/qa-detailed.png)
@@ -73,7 +90,7 @@ Students can indicate their confidence level when answering:
 
 ---
 
-### 📚 FAQ System
+### FAQ System
 
 #### FAQs Page
 ![FAQs Page](screenshots/faqs/faqs-page.png)
@@ -99,7 +116,7 @@ Students can indicate their confidence level when answering:
 
 ---
 
-### 🔍 Search & Discovery
+### Search & Discovery
 
 #### Search Modal
 ![Search Modal](screenshots/search/search-modal.png)
@@ -136,7 +153,7 @@ Students can indicate their confidence level when answering:
 
 ---
 
-### 👤 User System
+### User System
 
 #### Authentication
 - JWT-based secure authentication
@@ -180,7 +197,7 @@ Students can indicate their confidence level when answering:
 
 ---
 
-### 🛡️ Admin & Moderation
+### Admin & Moderation
 
 #### Admin Dashboard
 ![Admin Dashboard](screenshots/admin/dashboard.png)
@@ -224,7 +241,7 @@ Students can indicate their confidence level when answering:
 
 ---
 
-### 👥 Community Features
+### Community Features
 
 #### Leaderboard
 ![Leaderboard](screenshots/community/leaderboard.png)
@@ -240,7 +257,7 @@ Students can indicate their confidence level when answering:
 
 ---
 
-### 🎨 UI/UX Highlights
+### UI/UX Highlights
 
 #### Rich Text Editor
 - TipTap-based WYSIWYG editor
@@ -269,7 +286,7 @@ Students can indicate their confidence level when answering:
 
 ---
 
-### ⚡ Real-time Features
+### Real-time Features
 
 #### Live Notifications
 - Toast notifications for new activity
